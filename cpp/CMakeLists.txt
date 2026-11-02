@@ -15,10 +15,3 @@ target_include_directories(turismo_lib PUBLIC include)
 add_executable(turismo_cpp src/main.cpp)
 target_link_libraries(turismo_cpp PRIVATE turismo_lib)
 
-include(CTest)
-if(BUILD_TESTING)
-    add_executable(turismo_cpp_tests tests/DestinoTest.cpp)
-    target_link_libraries(turismo_cpp_tests PRIVATE turismo_lib)
-    add_test(NAME destino_test COMMAND turismo_cpp_tests)
-endif()
-

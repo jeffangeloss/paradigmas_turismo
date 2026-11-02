@@ -1,0 +1,5 @@
+codigo,origen,destino,distancia_km,tiempo_min,estado
+C001,P001,P002,0.8,5,habilitada
+C002,P002,P003,1.7,8,habilitada
+C003,P003,P004,5.2,18,habilitada
+C004,P001,P004,4.6,16,cerrada
