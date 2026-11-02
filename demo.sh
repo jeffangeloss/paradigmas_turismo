@@ -68,7 +68,7 @@ echo "Pendiente."
 # <<< FA03 Jefferson Sanchez
 
 titulo "Resultado"
-if [ "$FALLOS" -eq 0 ]; then
+if [[ "$FALLOS" -eq 0 ]]; then
     echo "Demo completa sin fallos. Se borro el directorio temporal."
 else
     echo "Hubo $FALLOS paso(s) con error."
