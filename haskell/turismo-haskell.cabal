@@ -7,11 +7,21 @@ common warnings
     ghc-options: -Wall
     default-language: Haskell2010
 
+-- Un modulo por funcionalidad de la seccion 4.2, mas las funcionalidades adicionales en src/FA/.
 library
     import: warnings
-    exposed-modules: Turismo
+    exposed-modules:
+        Tipos
+        LecturaCSV
+        Rutas
+        Reportes
+        FA.Samantha
+        FA.Melissa
+        FA.Jefferson
     hs-source-dirs: src
-    build-depends: base >=4.12 && <5
+    build-depends:
+        base >=4.12 && <5,
+        directory
 
 executable turismo-haskell
     import: warnings
@@ -20,4 +30,3 @@ executable turismo-haskell
     build-depends:
         base >=4.12 && <5,
         turismo-haskell
-

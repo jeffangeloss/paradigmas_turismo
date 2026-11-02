@@ -69,4 +69,4 @@ Una solicitud `pendiente` no tiene unidad asignada. Para pasarla a `asignada`, l
 - Los códigos no se repiten dentro de cada archivo.
 - Las referencias a puntos y unidades deben corresponder a registros existentes.
 - Los valores deben respetar los dominios y las restricciones indicadas en este documento.
-- Como referencia inicial, cada CSV contiene cuatro registros ilustrativos ambientados en lugares turísticos de Lima. No constituyen un conjunto de datos oficial y sus distancias, tiempos y costos son valores de ejemplo que el grupo puede ajustar.
+- Los datos de prueba cumplen las cantidades mínimas de la sección 3 del enunciado: 11 puntos, 16 conexiones (2 cerradas), 4 unidades (2 disponibles) y 9 solicitudes con los tres estados. Usan lugares reales de Lima con distancias, tiempos y costos aproximados que el grupo puede ajustar.

@@ -9,17 +9,34 @@ El sistema registra solicitudes de recorrido, encuentra rutas mediante conexione
 ```text
 paradigmas_turismo/
 ├── cpp/                    # Programación imperativa
+│   ├── include/            # Un .hpp por funcionalidad, modelo.hpp, utilidades.hpp y fa/fa.hpp
+│   ├── src/                # Un .cpp por funcionalidad, main.cpp y fa/fa_<nombre>.cpp
+│   └── CMakeLists.txt
 ├── haskell/                # Programación funcional
+│   ├── src/                # Tipos, LecturaCSV, Rutas, Reportes y FA/<Nombre>.hs
+│   ├── app/Main.hs         # Programa principal (4.2.7)
+│   └── turismo-haskell.cabal
 ├── prolog/                 # Programación lógica
+│   ├── src/                # lecturaCSV.pl (4.3.1), red, rutas, atencion, inaccesibles, turismo y fa/
+│   ├── app/                # main.pl (lectura de CSV) y demo.pl (un ejemplo de cada regla)
+│   └── tests/pruebas.pl    # 55 pruebas plunit
 ├── _datos/                 # Fuente de datos compartida
 │   ├── puntos.csv
 │   ├── conexiones.csv
 │   ├── unidades.csv
 │   ├── solicitudes.csv
 │   └── README.md
+├── demo.sh                 # Demostración completa en macOS o Linux
+├── BACKLOG.md              # Orden de trabajo, responsables y dependencias
+├── CONTRATO.md             # Invariantes, nombres compartidos y decisiones de implementación
+├── MEMORIA.md              # Registro de cambios del grupo
 ├── .gitignore
 └── README.md
 ```
+
+Cada archivo de código tiene un solo responsable, según el reparto del Anexo A (tabla de abajo). Los
+archivos compartidos (`modelo.hpp`, `utilidades.*`, `Tipos.hs`, `turismo.pl` y los CSV) se cambian solo
+con acuerdo del grupo.
 
 ## Módulos
 
@@ -44,7 +61,39 @@ Las funcionalidades adicionales pueden incorporar archivos complementarios, como
 
 ### Módulo C++
 
+Requiere un compilador con C++17 y CMake 3.16 o posterior. Desde la raíz del repositorio:
+
+```bash
+cmake -S cpp -B cpp/build
+cmake --build cpp/build
+./cpp/build/turismo_cpp _datos
+```
+
+En Windows, con un generador multiconfiguración, el ejecutable queda en
+`cpp\build\Debug\turismo_cpp.exe`. Sin CMake se puede compilar con g++:
+
+```bash
+g++ -std=c++17 -Wall -Wextra -Icpp/include -o turismo cpp/src/*.cpp cpp/src/fa/*.cpp
+./turismo _datos
+```
+
+Menú: 1 Registrar, 2 Gestionar estados, 3 Consultas, 4 Reporte general, 5 Funcionalidades adicionales
+y 0 Salir. El detalle está en [`cpp/README.md`](cpp/README.md).
+
 ### Módulo Haskell
+
+Requiere GHC y Cabal. Desde la carpeta `haskell/`:
+
+```bash
+cd haskell
+cabal build
+cabal run turismo-haskell -- ../_datos
+cabal run turismo-haskell -- ../_datos S006 P011,P007,P006,P004
+```
+
+Los argumentos son `[carpeta] [codigo_solicitud] [ruta]`. En PowerShell la ruta va entre comillas.
+Sin Cabal, desde la raíz: `runghc -ihaskell/src haskell/app/Main.hs _datos`. El detalle está en
+[`haskell/README.md`](haskell/README.md).
 
 ### Módulo Prolog
 
@@ -100,7 +149,28 @@ punto(Codigo, Nombre, Tipo, Zona).
 halt.
 ```
 
+Para usar además las reglas de la sección 4.3, se carga `src/turismo.pl`, que reúne el lector
+`src/lecturaCSV.pl` con las reglas:
+
+```prolog
+[src/turismo].
+cargar_datos('../_datos').
+conectado('P001', 'P003', Distancia).
+```
+
+Un ejemplo de cada regla, desde la raíz: `swipl prolog/app/demo.pl -- _datos`.
+
 La documentación completa del módulo se encuentra en [`prolog/README.md`](prolog/README.md).
+
+## Demostración y pruebas
+
+En macOS o Linux, `./demo.sh` compila C++ en un directorio temporal, muestra su reporte, ejecuta
+Haskell, la lectura de CSV y la demostración de Prolog, y corre las 55 pruebas plunit sobre una copia de
+`_datos/`, sin modificarla. Las pruebas de Prolog también se corren solas:
+
+```bash
+swipl -g run_tests -t halt prolog/tests/pruebas.pl
+```
 
 ## Funcionalidades y responsables
 
