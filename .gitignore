@@ -1,0 +1,21 @@
+# C++ / CMake
+cpp/build/
+cpp/cmake-build-*/
+*.o
+*.obj
+*.exe
+
+# Haskell / Cabal
+haskell/dist-newstyle/
+haskell/.stack-work/
+*.hi
+
+# Prolog
+*.qlf
+
+# Editores y sistema operativo
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+

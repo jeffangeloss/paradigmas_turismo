@@ -1,0 +1,32 @@
+cabal-version:      2.4
+name:               turismo-haskell
+version:            0.1.0.0
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+    default-language: Haskell2010
+
+library
+    import: warnings
+    exposed-modules: Turismo
+    hs-source-dirs: src
+    build-depends: base >=4.12 && <5
+
+executable turismo-haskell
+    import: warnings
+    main-is: Main.hs
+    hs-source-dirs: app
+    build-depends:
+        base >=4.12 && <5,
+        turismo-haskell
+
+test-suite turismo-haskell-test
+    import: warnings
+    type: exitcode-stdio-1.0
+    main-is: Main.hs
+    hs-source-dirs: test
+    build-depends:
+        base >=4.12 && <5,
+        turismo-haskell
+
