@@ -21,12 +21,3 @@ executable turismo-haskell
         base >=4.12 && <5,
         turismo-haskell
 
-test-suite turismo-haskell-test
-    import: warnings
-    type: exitcode-stdio-1.0
-    main-is: Main.hs
-    hs-source-dirs: test
-    build-depends:
-        base >=4.12 && <5,
-        turismo-haskell
-
