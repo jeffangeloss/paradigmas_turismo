@@ -1,0 +1,5 @@
+codigo,origen,destino,cantidad_turistas,prioridad,estado,unidad_asignada
+S001,P001,P002,2,alta,pendiente,
+S002,P002,P003,4,media,asignada,U002
+S003,P001,P004,20,alta,entregada,U003
+S004,P003,P004,8,baja,pendiente,
