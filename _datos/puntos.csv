@@ -1,5 +1,12 @@
 codigo,nombre,tipo,zona
-P001,Hotel Miraflores,hotel,Miraflores
-P002,Parque Kennedy,atractivo,Miraflores
-P003,Huaca Pucllana,atractivo,Miraflores
-P004,Mirador de Barranco,mirador,Barranco
+P001,Plaza Mayor de Lima,atractivo,Cercado de Lima
+P002,Gran Hotel Bolivar,hotel,Cercado de Lima
+P003,Museo Larco,atractivo,Pueblo Libre
+P004,Huaca Pucllana,atractivo,Miraflores
+P005,Parque del Amor,mirador,Miraflores
+P006,Miraflores Park Hotel,hotel,Miraflores
+P007,Puente de los Suspiros,atractivo,Barranco
+P008,Mirador Catalina Recavarren,mirador,Barranco
+P009,Circuito Magico del Agua,atractivo,Cercado de Lima
+P010,Mirador del Cerro San Cristobal,mirador,Rimac
+P011,Hotel B,hotel,Barranco
