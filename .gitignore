@@ -19,6 +19,3 @@ haskell/.stack-work/
 .DS_Store
 Thumbs.db
 
-# Documentos de Word (el informe se edita fuera del repositorio)
-*.docx
-~$*
