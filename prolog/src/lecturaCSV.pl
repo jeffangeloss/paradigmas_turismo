@@ -1,5 +1,6 @@
 :- module(lectura_csv, [
     cargar_datos/1,
+    cargar_datos/2,
     limpiar_datos/0,
     punto/4,
     conexion/6,
@@ -7,24 +8,53 @@
     solicitud/7
 ]).
 
-% Se convierte cada línea del archivo en un término fila(...).
 :- use_module(library(csv)).
+:- use_module(library(aggregate)).
 
-% Se crean los hechos para almacenar la información de los CSV.
+% Los hechos se reemplazan cada vez que se cargan los CSV.
 :- dynamic punto/4.
 :- dynamic conexion/6.
 :- dynamic unidad/5.
 :- dynamic solicitud/7.
 
-% Paso 1: limpiar la información anterior y cargar los CSV
 cargar_datos(CarpetaDatos) :-
+    cargar_datos(CarpetaDatos, _).
+
+cargar_datos(CarpetaDatos, Resumen) :-
+    validar_archivos(CarpetaDatos),
     limpiar_datos,
     cargar_puntos(CarpetaDatos),
     cargar_conexiones(CarpetaDatos),
     cargar_unidades(CarpetaDatos),
-    cargar_solicitudes(CarpetaDatos).
+    cargar_solicitudes(CarpetaDatos),
+    contar_datos(Resumen).
 
-% Paso 2: abrir un CSV (solo deuvelve sus filas)
+contar_datos(resumen(Puntos, Conexiones, Unidades, Solicitudes)) :-
+    aggregate_all(count, punto(_, _, _, _), Puntos),
+    aggregate_all(count, conexion(_, _, _, _, _, _), Conexiones),
+    aggregate_all(count, unidad(_, _, _, _, _), Unidades),
+    aggregate_all(count, solicitud(_, _, _, _, _, _, _), Solicitudes).
+
+validar_archivos(CarpetaDatos) :-
+    (   exists_directory(CarpetaDatos)
+    ->  validar_archivos_requeridos(CarpetaDatos, [
+            'puntos.csv',
+            'conexiones.csv',
+            'unidades.csv',
+            'solicitudes.csv'
+        ])
+    ;   throw(error(existence_error(directory, CarpetaDatos), cargar_datos/2))
+    ).
+
+validar_archivos_requeridos(_, []).
+validar_archivos_requeridos(CarpetaDatos, [Archivo|Resto]) :-
+    directory_file_path(CarpetaDatos, Archivo, Ruta),
+    (   exists_file(Ruta)
+    ->  validar_archivos_requeridos(CarpetaDatos, Resto)
+    ;   throw(error(existence_error(source_sink, Ruta), cargar_datos/2))
+    ).
+
+% Abre un CSV, omite su encabezado y devuelve las filas.
 leer_filas(CarpetaDatos, NombreArchivo, Filas) :-
     directory_file_path(CarpetaDatos, NombreArchivo, RutaArchivo),
     setup_call_cleanup(
@@ -37,17 +67,13 @@ leer_filas(CarpetaDatos, NombreArchivo, Filas) :-
         close(Archivo)
     ).
 
-%Cargar los datos de cada CSV y crear los hechos correspondientes
-
-% punto/4.
 cargar_puntos(CarpetaDatos) :-
-    leer_filas(CarpetaDatos, 'puntos.csv', Filas), % crea la lista de filas
-    maplist(guardar_punto, Filas). % recorre la lista y guarda cada punto
+    leer_filas(CarpetaDatos, 'puntos.csv', Filas),
+    maplist(guardar_punto, Filas).
 
 guardar_punto(fila(Codigo, Nombre, Tipo, Zona)) :-
-    assertz(punto(Codigo, Nombre, Tipo, Zona)). % agrega el hecho a la base
+    assertz(punto(Codigo, Nombre, Tipo, Zona)).
 
-% conexion/6.
 cargar_conexiones(CarpetaDatos) :-
     leer_filas(CarpetaDatos, 'conexiones.csv', Filas),
     maplist(guardar_conexion, Filas).
@@ -55,7 +81,6 @@ cargar_conexiones(CarpetaDatos) :-
 guardar_conexion(fila(Codigo, Origen, Destino, DistanciaKm, TiempoMin, Estado)) :-
     assertz(conexion(Codigo, Origen, Destino, DistanciaKm, TiempoMin, Estado)).
 
-% unidad/5.
 cargar_unidades(CarpetaDatos) :-
     leer_filas(CarpetaDatos, 'unidades.csv', Filas),
     maplist(guardar_unidad, Filas).
@@ -63,7 +88,6 @@ cargar_unidades(CarpetaDatos) :-
 guardar_unidad(fila(Codigo, Tipo, Capacidad, CostoKm, Estado)) :-
     assertz(unidad(Codigo, Tipo, Capacidad, CostoKm, Estado)).
 
-% solicitud/7.
 cargar_solicitudes(CarpetaDatos) :-
     leer_filas(CarpetaDatos, 'solicitudes.csv', Filas),
     maplist(guardar_solicitud, Filas).
@@ -72,7 +96,6 @@ guardar_solicitud(fila(Codigo, Origen, Destino, Cantidad, Prioridad, Estado, Uni
     assertz(solicitud(
         Codigo, Origen, Destino, Cantidad, Prioridad, Estado, UnidadAsignada
     )).
-
 
 limpiar_datos :-
     retractall(punto(_, _, _, _)),
