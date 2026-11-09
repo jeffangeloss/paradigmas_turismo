@@ -80,7 +80,7 @@ Si no está configurado en el `PATH`, usar la ruta completa:
 3. Cuando aparezca el prompt `?-`, cargar el código y los CSV:
 
 ```prolog
-[src/lecturaCSV].
+[src/LecturaCSV].
 cargar_datos('../_datos').
 ```
 

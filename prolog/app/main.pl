@@ -1,5 +1,10 @@
-:- use_module('../src/lecturaCSV', [cargar_datos/2]).
-:- use_module('../src/atencion_solicitudes', [ejecutar_atencion/0]).
+:- use_module('../src/LecturaCSV', [cargar_datos/2]).
+:- use_module('../src/entradasMenu', [leer_entrada/2]).
+:- use_module('../src/Conectividad', [
+    ejecutar_conexion/0,
+    ejecutar_alcanzabilidad/0
+]).
+:- use_module('../src/Atencion_solicitudes', [ejecutar_atencion/0]).
 
 main :-
     current_prolog_flag(argv, Argumentos),
@@ -45,12 +50,10 @@ mostrar_menu :-
     writeln('0. Volver al menu de C++').
 
 ejecutar_opcion("1") :-
-    % TODO 4.3.2: reemplazar este placeholder por la conexión directa.
-    mostrar_placeholder('Regla de conexion directa'),
+    ejecutar_conexion,
     menu_principal.
 ejecutar_opcion("2") :-
-    % TODO 4.3.3: reemplazar este placeholder por la alcanzabilidad.
-    mostrar_placeholder('Regla de alcanzabilidad'),
+    ejecutar_alcanzabilidad,
     menu_principal.
 ejecutar_opcion("3") :-
     % TODO 4.3.4: reemplazar este placeholder por la ruta que evita un punto.
@@ -71,18 +74,6 @@ ejecutar_opcion(_) :-
 
 mostrar_placeholder(Funcionalidad) :-
     format('[PENDIENTE] ~w aun no esta implementada.~n', [Funcionalidad]).
-
-
-% Lee texto sin exigir la sintaxis ni el punto final de una consulta Prolog.
-leer_entrada(Mensaje, Texto) :-
-    write(Mensaje),
-    flush_output,
-    read_line_to_string(user_input, Entrada),
-    (   Entrada == end_of_file
-    ->  nl,
-        halt
-    ;   normalize_space(string(Texto), Entrada)
-    ).
 
 manejar_error(Error) :-
     message_to_string(Error, Detalle),
