@@ -9,7 +9,10 @@ common warnings
 
 library
     import: warnings
-    exposed-modules: Turismo
+    exposed-modules:
+        Turismo
+        Tipos
+        LecturaCSV
     hs-source-dirs: src
     build-depends: base >=4.12 && <5
 
