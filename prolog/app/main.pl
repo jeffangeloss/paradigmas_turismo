@@ -1,10 +1,10 @@
-:- use_module('../src/lecturaCSV', [cargar_datos/2]).
-:- use_module('../src/entrada', [leer_entrada/2]).
-:- use_module('../src/conectividad', [
+:- use_module('../src/LecturaCSV', [cargar_datos/2]).
+:- use_module('../src/entradasMenu', [leer_entrada/2]).
+:- use_module('../src/Conectividad', [
     ejecutar_conexion/0,
     ejecutar_alcanzabilidad/0
 ]).
-:- use_module('../src/atencion_solicitudes', [ejecutar_atencion/0]).
+:- use_module('../src/Atencion_solicitudes', [ejecutar_atencion/0]).
 
 main :-
     current_prolog_flag(argv, Argumentos),

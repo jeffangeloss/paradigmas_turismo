@@ -94,7 +94,7 @@ cd prolog
 Cuando aparezca el prompt `?-`, escribir las consultas sin copiar el propio símbolo `?-`:
 
 ```prolog
-[src/lecturaCSV].
+[src/LecturaCSV].
 cargar_datos('../_datos').
 punto(Codigo, Nombre, Tipo, Zona).
 halt.

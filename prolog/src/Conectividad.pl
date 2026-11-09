@@ -6,8 +6,8 @@
     alcanzable/2
 ]).
 
-:- use_module('lecturaCSV.pl', [conexion/6]).
-:- use_module('entrada', [leer_codigo/2]).
+:- use_module('LecturaCSV.pl', [conexion/6]).
+:- use_module('entradasMenu', [leer_codigo/2]).
 
 conectado(Origen, Destino, Distancia) :-
     conexion(_, Origen, Destino, Distancia, _, habilitada).
