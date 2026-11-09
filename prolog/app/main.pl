@@ -1,30 +1,96 @@
-% Importar los predicados que leen los CSV y crean la base de conocimiento.
-:- use_module('../src/lecturaCSV').
-:- use_module(library(aggregate)).
+:- use_module('../src/lecturaCSV', [cargar_datos/2]).
+:- use_module('../src/atencion_solicitudes', [ejecutar_atencion/0]).
 
-% Paso 1: recibir la ruta de la carpeta de datos desde la terminal.
-% Paso 2: cargar los CSV.
-% Paso 3: mostrar cuántos hechos quedaron disponibles para realizar consultas.
 main :-
     current_prolog_flag(argv, Argumentos),
     (   Argumentos = [CarpetaDatos|_]
-    ->  cargar_datos(CarpetaDatos),
-        mostrar_resumen
-    ;   writeln('Uso: swipl prolog/app/main.pl -- _datos'),
+    ->  ejecutar_carga(CarpetaDatos)
+    ;   writeln('[ERROR] Uso: swipl prolog/app/main.pl -- _datos'),
         halt(1)
     ).
 
-% Contar los hechos creados a partir de cada archivo CSV.
-mostrar_resumen :-
-    aggregate_all(count, punto(_, _, _, _), Puntos),
-    aggregate_all(count, conexion(_, _, _, _, _, _), Conexiones),
-    aggregate_all(count, unidad(_, _, _, _, _), Unidades),
-    aggregate_all(count, solicitud(_, _, _, _, _, _, _), Solicitudes),
-    format('Datos cargados correctamente.~n', []),
-    format('Puntos: ~d~n', [Puntos]),
-    format('Conexiones: ~d~n', [Conexiones]),
-    format('Unidades: ~d~n', [Unidades]),
-    format('Solicitudes: ~d~n', [Solicitudes]).
+ejecutar_carga(CarpetaDatos) :-
+    format('Cargando archivos desde: ~w~n~n', [CarpetaDatos]),
+    catch(
+        ( cargar_datos(CarpetaDatos, Resumen),
+          mostrar_resumen(Resumen),
+          menu_principal
+        ),
+        Error,
+        manejar_error(Error)
+    ).
 
-% Ejecutar main/0 solamente cuando este archivo se inicia como programa.
+mostrar_resumen(resumen(Puntos, Conexiones, Unidades, Solicitudes)) :-
+    format('[OK] puntos.csv: ~d registros~n', [Puntos]),
+    format('[OK] conexiones.csv: ~d registros~n', [Conexiones]),
+    format('[OK] unidades.csv: ~d registros~n', [Unidades]),
+    format('[OK] solicitudes.csv: ~d registros~n', [Solicitudes]),
+    Total is Puntos + Conexiones + Unidades + Solicitudes,
+    format('~nCarga completada: 4 archivos, ~d registros en total.~n', [Total]).
+
+% Muestra las funcionalidades Prolog y procesa una opción por vez.
+menu_principal :-
+    mostrar_menu,
+    leer_entrada('Opcion: ', Opcion),
+    ejecutar_opcion(Opcion).
+
+mostrar_menu :-
+    nl,
+    writeln('=== Modulo Prolog ==='),
+    writeln('1. [4.3.2] Regla de conexion directa'),
+    writeln('2. [4.3.3] Regla de alcanzabilidad'),
+    writeln('3. [4.3.4] Regla de ruta evitando un punto'),
+    writeln('4. [4.3.5] Regla de atencion de solicitudes'),
+    writeln('5. [4.3.6] Regla de solicitudes inaccesibles'),
+    writeln('0. Volver al menu de C++').
+
+ejecutar_opcion("1") :-
+    % TODO 4.3.2: reemplazar este placeholder por la conexión directa.
+    mostrar_placeholder('Regla de conexion directa'),
+    menu_principal.
+ejecutar_opcion("2") :-
+    % TODO 4.3.3: reemplazar este placeholder por la alcanzabilidad.
+    mostrar_placeholder('Regla de alcanzabilidad'),
+    menu_principal.
+ejecutar_opcion("3") :-
+    % TODO 4.3.4: reemplazar este placeholder por la ruta que evita un punto.
+    mostrar_placeholder('Regla de ruta evitando un punto'),
+    menu_principal.
+ejecutar_opcion("4") :-
+    ejecutar_atencion,
+    menu_principal.
+ejecutar_opcion("5") :-
+    % TODO 4.3.6: reemplazar este placeholder por solicitudes inaccesibles.
+    mostrar_placeholder('Regla de solicitudes inaccesibles'),
+    menu_principal.
+ejecutar_opcion("0") :-
+    writeln('Regresando al menu de C++...').
+ejecutar_opcion(_) :-
+    writeln('[ERROR] Opcion no valida.'),
+    menu_principal.
+
+mostrar_placeholder(Funcionalidad) :-
+    format('[PENDIENTE] ~w aun no esta implementada.~n', [Funcionalidad]).
+
+
+% Lee texto sin exigir la sintaxis ni el punto final de una consulta Prolog.
+leer_entrada(Mensaje, Texto) :-
+    write(Mensaje),
+    flush_output,
+    read_line_to_string(user_input, Entrada),
+    (   Entrada == end_of_file
+    ->  nl,
+        halt
+    ;   normalize_space(string(Texto), Entrada)
+    ).
+
+manejar_error(Error) :-
+    message_to_string(Error, Detalle),
+    format(
+        user_error,
+        '[ERROR] No se pudieron cargar los archivos CSV.~nDetalle: ~w~n',
+        [Detalle]
+    ),
+    halt(1).
+
 :- initialization(main, main).
