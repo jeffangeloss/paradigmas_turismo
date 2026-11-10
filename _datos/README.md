@@ -2,6 +2,8 @@
 
 Esta carpeta es la única fuente de datos compartida por los módulos de C++, Haskell y Prolog. Los archivos usan codificación UTF-8, la coma como separador y el punto como separador decimal.
 
+El lector sencillo de C++ separa los campos por comas; por ello, los campos no deben incluir comas internas ni comillas escapadas. Las categorías e intereses de FA01 se registran en archivos de relación, una por fila.
+
 El módulo de C++ será el único que escriba o actualice estos archivos. Inicialmente, Haskell y Prolog los usarán en modo lectura. Cada módulo debe recibir la ruta de esta carpeta mediante un parámetro o una configuración; los CSV no deben duplicarse dentro de los módulos.
 
 ## `puntos.csv`
@@ -61,6 +63,65 @@ codigo,origen,destino,cantidad_turistas,prioridad,estado,unidad_asignada
 - `prioridad`: `alta`, `media` o `baja`.
 - `estado`: `pendiente`, `asignada` o `entregada`.
 - `unidad_asignada`: código de la unidad que atiende o atendió la solicitud.
+
+## Datos adicionales de FA01
+
+El recomendador explicable usa cinco archivos adicionales. C++ los mantiene y
+Prolog los lee junto con los CSV base. Las categorías y los intereses se
+guardan una por fila para que cada relación sea fácil de consultar.
+
+### `caracteristicas_puntos.csv`
+
+```csv
+codigo,accesible_movilidad,apto_ninos,seguro_dia,seguro_noche,horario_inicio,horario_fin
+```
+
+- `codigo`: código existente en `puntos.csv`.
+- `accesible_movilidad`, `apto_ninos`, `seguro_dia` y `seguro_noche`: valores `si` o `no`.
+- `horario_inicio` y `horario_fin`: horas en formato `HH:MM`.
+
+### `categorias_puntos.csv`
+
+```csv
+codigo,categoria
+```
+
+Cada fila asocia un punto existente con una categoría. Un mismo punto puede
+aparecer varias veces si tiene más de una categoría.
+
+### `accesibilidad_conexiones.csv`
+
+```csv
+codigo,accesible_movilidad
+```
+
+El código debe existir en `conexiones.csv`; la accesibilidad se evalúa solo
+para conexiones habilitadas.
+
+### `perfiles_turista.csv`
+
+```csv
+codigo,movilidad_reducida,viaja_con_ninos,hora_visita
+```
+
+- `codigo`: identificador único del perfil.
+- `movilidad_reducida` y `viaja_con_ninos`: valores `si` o `no`.
+- `hora_visita`: hora local de visita en formato `HH:MM`.
+
+### `intereses_turista.csv`
+
+```csv
+codigo,interes
+```
+
+Cada fila relaciona un perfil existente con uno de sus intereses. Un perfil
+puede aparecer en varias filas.
+
+Una recomendación se descarta si incumple la accesibilidad requerida, la
+seguridad del horario, la atención del lugar o la condición de visita con
+niños. Las categorías coincidentes aumentan el puntaje y se explican en la
+salida. Si el perfil requiere accesibilidad, el punto debe tener al menos una
+ruta de conexiones habilitadas y marcadas como accesibles desde algún hotel.
 
 Una solicitud `pendiente` no tiene unidad asignada. Para pasarla a `asignada`, la unidad debe estar `disponible` y tener capacidad suficiente; después de la asignación, la unidad pasa a `ocupada`. Al marcar la solicitud como `entregada`, la unidad vuelve a estar `disponible`, pero la solicitud conserva su código en `unidad_asignada` para los reportes históricos.
 
