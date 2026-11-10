@@ -48,6 +48,7 @@ public:
       : carpetaDatos(carpetaDatos) {}
 
   void ejecutar() {
+    cargarDatosIniciales();
     string opcion;
     do {
       cout << "\n=== Sistema de turismo ===\n"
@@ -86,6 +87,31 @@ public:
 
 private:
   string carpetaDatos;
+
+  vector<Punto> puntos;
+  vector<Conexion> conexiones;
+  vector<Unidad> unidades;
+  vector<Solicitud> solicitudes;
+
+  // 4.1.2 Carga inicial. Responsable: Jefferson Sanchez.
+  void cargarDatosIniciales() {
+    const vector<string> archivos = {"puntos.csv", "conexiones.csv",
+                                     "unidades.csv", "solicitudes.csv"};
+    for (int i = 0; i < static_cast<int>(archivos.size()); ++i) {
+      ifstream archivo(rutaArchivo(archivos[i]).c_str());
+      if (!archivo) cerr << "No se pudo abrir " << rutaArchivo(archivos[i]) << "\n";
+    }
+
+    puntos = cargarPuntos();
+    conexiones = cargarConexiones();
+    unidades = cargarUnidades();
+    solicitudes = cargarSolicitudes();
+
+    cout << "Puntos cargados: " << puntos.size() << '\n'
+         << "Conexiones cargadas: " << conexiones.size() << '\n'
+         << "Unidades cargadas: " << unidades.size() << '\n'
+         << "Solicitudes cargadas: " << solicitudes.size() << '\n';
+  }
 
   string rutaArchivo(const string &nombre) const {
     return carpetaDatos + "/" + nombre;
@@ -228,7 +254,6 @@ private:
   }
 
   void consultarPunto() const {
-    vector<Punto> puntos = cargarPuntos();
     string codigo = mayusculas(leerTexto("Codigo del punto: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(puntos.size()); ++i) {
@@ -242,7 +267,6 @@ private:
   }
 
   void consultarConexion() const {
-    vector<Conexion> conexiones = cargarConexiones();
     string codigo = mayusculas(leerTexto("Codigo de la conexion: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(conexiones.size()); ++i) {
@@ -258,7 +282,6 @@ private:
   }
 
   void consultarUnidad() const {
-    vector<Unidad> unidades = cargarUnidades();
     string codigo = mayusculas(leerTexto("Codigo de la unidad: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(unidades.size()); ++i) {
@@ -273,7 +296,6 @@ private:
   }
 
   void consultarSolicitud() const {
-    vector<Solicitud> solicitudes = cargarSolicitudes();
     string codigo = mayusculas(leerTexto("Codigo de la solicitud: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(solicitudes.size()); ++i) {
@@ -300,10 +322,6 @@ private:
   }
 
   void mostrarReporteGeneral() const {
-    vector<Punto> puntos = cargarPuntos();
-    vector<Conexion> conexiones = cargarConexiones();
-    vector<Unidad> unidades = cargarUnidades();
-    vector<Solicitud> solicitudes = cargarSolicitudes();
     int habilitadas = 0;
     int cerradas = 0;
     int disponibles = 0;
@@ -563,44 +581,10 @@ private:
   }
 };
 
-// 4.1.2 Carga inicial. Responsable: Jefferson Sanchez.
-std::vector<Punto> cargaInicialPuntos(const std::string &carpetaDatos) {
-    std::ifstream archivo(carpetaDatos + "/puntos.csv");
-
-    if(!archivo){
-        std::cerr << "No se pudo abrir " << carpetaDatos << "/puntos.csv\n";
-        return {};
-    }
-
-    std::string fila;
-    std::getline(archivo, fila); // Omite el encabezado
-
-    std::vector<Punto> puntos;
-    while (std::getline(archivo, fila)) {
-        if (fila.empty()) {
-            continue;
-        }
-
-        std::istringstream campos(fila);
-        Punto punto;
-        if (std::getline(campos, punto.codigo, ',') &&
-            std::getline(campos, punto.nombre, ',') &&
-            std::getline(campos, punto.tipo, ',') &&
-            std::getline(campos, punto.zona) ){
-            puntos.push_back(punto);
-        }
-    }
-
-    return puntos;
-}
-
 int main() {
   string carpetaDatos = "_datos";
-  ifstream datos((carpetaDatos + "/puntos.csv").c_str());
+  ifstream datos(carpetaDatos + "/puntos.csv");
   if (!datos) carpetaDatos = "../_datos";
-
-  std::vector<Punto> puntos = cargaInicialPuntos(carpetaDatos);
-  std::cout << "Puntos cargados: " << puntos.size() << '\n';
 
   SistemaTurismo sistema(carpetaDatos);
   sistema.ejecutar();
