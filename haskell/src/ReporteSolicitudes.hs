@@ -1,8 +1,5 @@
 -- 4.2.6 Reporte de solicitudes.
-module ReporteSolicitudes
-  ( reporteSolicitudes
-  , ejecutarReporteSolicitudes
-  ) where
+module ReporteSolicitudes(reporteSolicitudes, ejecutarReporteSolicitudes) where
 
 import Tipos (Solicitud (..))
 
