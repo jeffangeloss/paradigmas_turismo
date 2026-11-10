@@ -91,11 +91,15 @@ private:
     return carpetaDatos + "/" + nombre;
   }
 
+  // Los CSV separan los campos con comas, asi que ningun dato puede llevarlas.
   string leerTexto(const string &mensaje) const {
     string respuesta;
-    cout << mensaje;
-    getline(cin, respuesta);
-    return respuesta;
+    while (true) {
+      cout << mensaje;
+      if (!getline(cin, respuesta)) return "";
+      if (respuesta.find(',') == string::npos) return respuesta;
+      cout << "No uses comas. Si son varios valores, separalos con punto y coma.\n";
+    }
   }
 
   vector<string> separarCampos(const string &linea) const {

@@ -21,16 +21,29 @@ ejecutar_carga(CarpetaDatos) :-
     format('Cargando archivos desde: ~w~n~n', [CarpetaDatos]),
     catch(
         ( cargar_datos(CarpetaDatos, Resumen),
-          (   cargar_recomendador(CarpetaDatos)
-          ->  mostrar_resumen(Resumen),
-              menu_principal
-          ;   writeln('[ERROR] No se pudieron cargar los archivos de FA01.'),
-              halt(1)
-          )
+          mostrar_resumen(Resumen),
+          cargar_fa01(CarpetaDatos),
+          menu_principal
         ),
         Error,
         manejar_error(Error)
     ).
+
+% FA01 se carga aparte para que un CSV suyo ausente o mal formado no cierre
+% el modulo. En ese caso el menu abre igual y la opcion 6 solo avisa, porque
+% los datos de FA01 pueden haber quedado a medias.
+:- dynamic fa01_cargado/0.
+
+cargar_fa01(CarpetaDatos) :-
+    retractall(fa01_cargado),
+    catch(cargar_recomendador(CarpetaDatos), Error,
+          ( message_to_string(Error, Detalle),
+            format('[AVISO] Detalle: ~w~n', [Detalle]),
+            fail )),
+    !,
+    assertz(fa01_cargado).
+cargar_fa01(_) :-
+    writeln('[AVISO] No se cargaron los datos de FA01; la opcion 6 no estara disponible.').
 
 mostrar_resumen(resumen(Puntos, Conexiones, Unidades, Solicitudes)) :-
     format('[OK] puntos.csv: ~d registros~n', [Puntos]),
@@ -73,7 +86,10 @@ ejecutar_opcion("5") :-
     ejecutar_solicitudes_inaccesibles,
     menu_principal.
 ejecutar_opcion("6") :-
-    ejecutar_recomendador,
+    (   fa01_cargado
+    ->  ejecutar_recomendador
+    ;   writeln('[AVISO] FA01 no esta disponible porque sus datos no se cargaron.')
+    ),
     menu_principal.
 ejecutar_opcion("0") :-
     writeln('Regresando al menu de C++...').
