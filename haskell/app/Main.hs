@@ -1,8 +1,11 @@
 module Main (main) where
 
-import LecturaCSV (leerConexiones)
+import LecturaCSV (leerConexiones, leerSolicitudes)
 import Tipos (Conexion)
-import Vecinos (ejecutarVecinos)
+import Tipos (Solicitud)
+import Vecinos (ejecutarVecinos, vecinos)
+import ReporteSolicitudes (ejecutarReporteSolicitudes, reporteSolicitudes)
+import System.Environment (getArgs)
 
 mostrarMenu :: IO ()
 mostrarMenu = do
@@ -12,7 +15,7 @@ mostrarMenu = do
   putStrLn "2. [4.2.4] Rutas posibles"
   putStrLn "3. [4.2.5] Costo de una ruta"
   putStrLn "4. [4.2.6] Reporte de solicitudes"
-  putStrLn "5. [4.2.7] Resultado esperado"
+  putStrLn "5. [4.2.7] Mostrar resultado esperado"
   putStrLn "0. Volver al menu de C++"
   putStrLn "Opcion:"
 
@@ -20,31 +23,42 @@ mostrarPendiente :: String -> IO ()
 mostrarPendiente funcionalidad =
   putStrLn ("[PENDIENTE] " ++ funcionalidad ++ " aun no esta implementada.")
 
-ejecutarOpcion :: String -> [Conexion] -> IO ()
-ejecutarOpcion "1" conexiones = ejecutarVecinos conexiones
-ejecutarOpcion "2" _ = mostrarPendiente "Rutas posibles"
-ejecutarOpcion "3" _ = mostrarPendiente "Costo de una ruta"
-ejecutarOpcion "4" _ = mostrarPendiente "Reporte de solicitudes"
-ejecutarOpcion "5" _ = mostrarPendiente "Resultado esperado"
-ejecutarOpcion "0" _ = putStrLn "Regresando al menu de C++..."
-ejecutarOpcion _ _ = putStrLn "[ERROR] Opcion no valida."
+ejecutarOpcion :: String -> [Conexion] -> [Solicitud] -> IO ()
+ejecutarOpcion "1" conexiones _ = ejecutarVecinos conexiones
+ejecutarOpcion "2" _ _ = mostrarPendiente "Rutas posibles"
+ejecutarOpcion "3" _ _ = mostrarPendiente "Costo de una ruta"
+ejecutarOpcion "4" _ solicitudes = ejecutarReporteSolicitudes solicitudes
+ejecutarOpcion "5" conexiones solicitudes = do
+  putStrLn "=== Resultado esperado ==="
+  putStrLn ("Vecinos habilitados de P002: " ++ show (vecinos "P002" conexiones))
+  putStrLn (reporteSolicitudes solicitudes)
+ejecutarOpcion "0" _ _ = putStrLn "Regresando al menu de C++..."
+ejecutarOpcion _ _ _ = putStrLn "[ERROR] Opcion no valida."
 
-menuPrincipal :: [Conexion] -> IO ()
-menuPrincipal conexiones = do
+menuPrincipal :: [Conexion] -> [Solicitud] -> IO ()
+menuPrincipal conexiones solicitudes = do
   mostrarMenu
   opcion <- getLine
-  ejecutarOpcion opcion conexiones
+  ejecutarOpcion opcion conexiones solicitudes
 
   if opcion == "0"
     then return ()
-    else menuPrincipal conexiones
+    else menuPrincipal conexiones solicitudes
 
-iniciarPrograma :: Maybe [Conexion] -> IO ()
-iniciarPrograma Nothing = putStrLn "[ERROR] No se pudo leer conexiones.csv."
-iniciarPrograma (Just conexiones) = do
+iniciarPrograma :: Maybe [Conexion] -> Maybe [Solicitud] -> IO ()
+iniciarPrograma Nothing _ = putStrLn "[ERROR] No se pudo leer conexiones.csv."
+iniciarPrograma _ Nothing = putStrLn "[ERROR] No se pudo leer solicitudes.csv."
+iniciarPrograma (Just conexiones) (Just solicitudes) = do
   putStrLn "[OK] conexiones.csv cargado correctamente."
-  menuPrincipal conexiones
+  putStrLn "[OK] solicitudes.csv cargado correctamente."
+  menuPrincipal conexiones solicitudes
 
+main :: IO ()
 main = do
-  resultado <- leerConexiones "../_datos/conexiones.csv"
-  iniciarPrograma resultado
+  argumentos <- getArgs
+  let carpetaDatos = case argumentos of
+        [] -> "../_datos"
+        carpeta : _ -> carpeta
+  resultadoConexiones <- leerConexiones (carpetaDatos ++ "/conexiones.csv")
+  resultadoSolicitudes <- leerSolicitudes (carpetaDatos ++ "/solicitudes.csv")
+  iniciarPrograma resultadoConexiones resultadoSolicitudes

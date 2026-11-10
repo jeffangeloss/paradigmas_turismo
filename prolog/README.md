@@ -149,3 +149,24 @@ El predicado `cargar_datos/1` realiza estos pasos:
 5. Lee `solicitudes.csv` y crea hechos `solicitud/7`.
 
 Esto permite volver a ejecutar `cargar_datos('../_datos').` después de cambiar un CSV sin duplicar información.
+
+## Ruta evitando un punto y solicitudes inaccesibles
+
+La opción 4.3.4 pide origen, destino y punto a evitar. Devuelve una ruta que
+usa conexiones habilitadas en ambos sentidos, sin repetir puntos. Si el punto
+evitado coincide con el origen o el destino, o no existe una ruta alternativa,
+informa que no hay solución.
+
+La opción 4.3.6 lista las solicitudes para las que el destino no es alcanzable
+desde el origen. Considera todos los estados para que también sirva como
+revisión de consistencia de los registros históricos.
+
+## Recomendador FA01
+
+La opción FA01 lee `caracteristicas_puntos.csv`,
+`accesibilidad_conexiones.csv`, `perfiles_turista.csv`,
+`categorias_puntos.csv` e `intereses_turista.csv`, documentados en
+`_datos/README.md`. Categorías e intereses se guardan una por fila. Para cada
+lugar se explican los motivos de recomendación o descarte según intereses,
+accesibilidad, presencia de niños, horario y seguridad. Si el perfil requiere
+accesibilidad, se busca una ruta habilitada y accesible desde un hotel.

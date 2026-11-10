@@ -2,9 +2,12 @@
 :- use_module('../src/entradasMenu', [leer_entrada/2]).
 :- use_module('../src/Conectividad', [
     ejecutar_conexion/0,
-    ejecutar_alcanzabilidad/0
+    ejecutar_alcanzabilidad/0,
+    ejecutar_ruta_evitando/0
 ]).
 :- use_module('../src/Atencion_solicitudes', [ejecutar_atencion/0]).
+:- use_module('../src/Solicitudes_inaccesibles', [ejecutar_solicitudes_inaccesibles/0]).
+:- use_module('../src/Recomendador', [cargar_recomendador/1, ejecutar_recomendador/0]).
 
 main :-
     current_prolog_flag(argv, Argumentos),
@@ -19,11 +22,28 @@ ejecutar_carga(CarpetaDatos) :-
     catch(
         ( cargar_datos(CarpetaDatos, Resumen),
           mostrar_resumen(Resumen),
+          cargar_fa01(CarpetaDatos),
           menu_principal
         ),
         Error,
         manejar_error(Error)
     ).
+
+% FA01 se carga aparte para que un CSV suyo ausente o mal formado no cierre
+% el modulo. En ese caso el menu abre igual y la opcion 6 solo avisa, porque
+% los datos de FA01 pueden haber quedado a medias.
+:- dynamic fa01_cargado/0.
+
+cargar_fa01(CarpetaDatos) :-
+    retractall(fa01_cargado),
+    catch(cargar_recomendador(CarpetaDatos), Error,
+          ( message_to_string(Error, Detalle),
+            format('[AVISO] Detalle: ~w~n', [Detalle]),
+            fail )),
+    !,
+    assertz(fa01_cargado).
+cargar_fa01(_) :-
+    writeln('[AVISO] No se cargaron los datos de FA01; la opcion 6 no estara disponible.').
 
 mostrar_resumen(resumen(Puntos, Conexiones, Unidades, Solicitudes)) :-
     format('[OK] puntos.csv: ~d registros~n', [Puntos]),
@@ -47,6 +67,7 @@ mostrar_menu :-
     writeln('3. [4.3.4] Regla de ruta evitando un punto'),
     writeln('4. [4.3.5] Regla de atencion de solicitudes'),
     writeln('5. [4.3.6] Regla de solicitudes inaccesibles'),
+    writeln('6. [FA01] Recomendador explicable de atractivos'),
     writeln('0. Volver al menu de C++').
 
 ejecutar_opcion("1") :-
@@ -56,24 +77,25 @@ ejecutar_opcion("2") :-
     ejecutar_alcanzabilidad,
     menu_principal.
 ejecutar_opcion("3") :-
-    % TODO 4.3.4: reemplazar este placeholder por la ruta que evita un punto.
-    mostrar_placeholder('Regla de ruta evitando un punto'),
+    ejecutar_ruta_evitando,
     menu_principal.
 ejecutar_opcion("4") :-
     ejecutar_atencion,
     menu_principal.
 ejecutar_opcion("5") :-
-    % TODO 4.3.6: reemplazar este placeholder por solicitudes inaccesibles.
-    mostrar_placeholder('Regla de solicitudes inaccesibles'),
+    ejecutar_solicitudes_inaccesibles,
+    menu_principal.
+ejecutar_opcion("6") :-
+    (   fa01_cargado
+    ->  ejecutar_recomendador
+    ;   writeln('[AVISO] FA01 no esta disponible porque sus datos no se cargaron.')
+    ),
     menu_principal.
 ejecutar_opcion("0") :-
     writeln('Regresando al menu de C++...').
 ejecutar_opcion(_) :-
     writeln('[ERROR] Opcion no valida.'),
     menu_principal.
-
-mostrar_placeholder(Funcionalidad) :-
-    format('[PENDIENTE] ~w aun no esta implementada.~n', [Funcionalidad]).
 
 manejar_error(Error) :-
     message_to_string(Error, Detalle),

@@ -1,0 +1,5 @@
+codigo,accesible_movilidad,apto_ninos,seguro_dia,seguro_noche,horario_inicio,horario_fin
+P001,si,si,si,si,00:00,23:59
+P002,si,si,si,no,06:00,18:00
+P003,no,si,si,no,09:00,17:00
+P004,no,si,si,no,08:00,18:00
