@@ -559,10 +559,44 @@ private:
   }
 };
 
+// 4.1.2 Carga inicial. Responsable: Jefferson Sanchez.
+std::vector<Punto> cargaInicialPuntos(const std::string &carpetaDatos) {
+    std::ifstream archivo(carpetaDatos + "/puntos.csv");
+
+    if(!archivo){
+        std::cerr << "No se pudo abrir " << carpetaDatos << "/puntos.csv\n";
+        return {};
+    }
+
+    std::string fila;
+    std::getline(archivo, fila); // Omite el encabezado
+
+    std::vector<Punto> puntos;
+    while (std::getline(archivo, fila)) {
+        if (fila.empty()) {
+            continue;
+        }
+
+        std::istringstream campos(fila);
+        Punto punto;
+        if (std::getline(campos, punto.codigo, ',') &&
+            std::getline(campos, punto.nombre, ',') &&
+            std::getline(campos, punto.tipo, ',') &&
+            std::getline(campos, punto.zona) ){
+            puntos.push_back(punto);
+        }
+    }
+
+    return puntos;
+}
+
 int main() {
   string carpetaDatos = "_datos";
   ifstream datos((carpetaDatos + "/puntos.csv").c_str());
   if (!datos) carpetaDatos = "../_datos";
+
+  std::vector<Punto> puntos = cargaInicialPuntos(carpetaDatos);
+  std::cout << "Puntos cargados: " << puntos.size() << '\n';
 
   SistemaTurismo sistema(carpetaDatos);
   sistema.ejecutar();
