@@ -1,5 +1,9 @@
 codigo,tipo,capacidad,costo_km,estado
-U001,guia_peatonal,10,1.50,disponible
+U001,guia_peatonal,10,1.50,ocupada
 U002,taxi_turistico,4,3.20,ocupada
-U003,bus_turistico,25,5.80,disponible
-U004,bus_turistico,40,7.50,disponible
+U003,bus_turistico,25,5.80,ocupada
+U004,bus_turistico,40,7.50,ocupada
+U005,taxi_turistico,4,3.50,ocupada
+U006,taxi_turistico,6,4.00,disponible
+U007,bus_turistico,30,6.20,disponible
+U008,guia_peatonal,15,2.00,disponible

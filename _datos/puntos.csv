@@ -1,5 +1,14 @@
 codigo,nombre,tipo,zona
+P000,Agencia de Turismo,agencia,Miraflores
 P001,Hotel Miraflores,hotel,Miraflores
-P002,Parque Kennedy,atractivo,Miraflores
+P002,Parque Kennedy,espacio_publico,Miraflores
 P003,Huaca Pucllana,atractivo,Miraflores
 P004,Mirador de Barranco,mirador,Barranco
+P005,Museo Larco,atractivo,Pueblo Libre
+P006,Museo de Arte de Lima,atractivo,Cercado de Lima
+P007,Museo de Arte Contemporaneo de Lima,atractivo,Barranco
+P008,Hotel B,hotel,Barranco
+P009,Hotel Country Club Lima,hotel,San Isidro
+P010,Mirador del Morro Solar,mirador,Chorrillos
+P011,Parque del Amor,espacio_publico,Miraflores
+P012,Circuito Magico del Agua,atractivo,Cercado de Lima

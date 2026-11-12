@@ -16,8 +16,11 @@ codigo,nombre,tipo,zona
 
 - `codigo`: identificador único del punto.
 - `nombre`: nombre descriptivo.
-- `tipo`: `hotel`, `atractivo` o `mirador`.
+- `tipo`: `agencia`, `hotel`, `atractivo`, `mirador` o `espacio_publico`.
 - `zona`: zona de Lima a la que pertenece el punto.
+- `P000` representa la agencia y se utiliza únicamente como origen operativo.
+- `espacio_publico` identifica parques, plazas y otros lugares de visita libre
+  que no corresponden a un hotel, un atractivo con entrada o un mirador.
 
 ## `conexiones.csv`
 
@@ -63,6 +66,37 @@ codigo,origen,destino,cantidad_turistas,prioridad,estado,unidad_asignada
 - `prioridad`: `alta`, `media` o `baja`.
 - `estado`: `pendiente`, `asignada` o `entregada`.
 - `unidad_asignada`: código de la unidad que atiende o atendió la solicitud.
+
+## Datos adicionales de FA02
+
+### `entradas.csv`
+
+Registra el costo de ingreso y los minutos de visita de cada punto turístico.
+No incluye una fila para la agencia `P000`.
+
+```csv
+punto,precio_general,precio_estudiante,precio_nino,minutos_visita
+```
+
+- `punto`: código existente en `puntos.csv`.
+- `precio_general`, `precio_estudiante` y `precio_nino`: tarifas no negativas.
+- `minutos_visita`: duración estimada mayor que cero.
+- Los puntos de tipo `atractivo` pueden tener una tarifa de entrada.
+- Los hoteles, miradores y espacios públicos mantienen sus tarifas en cero,
+  pero sus minutos sí forman parte del tiempo total del recorrido.
+
+### `visitantes.csv`
+
+Registra una fila por integrante de una solicitud aceptada en FA02.
+
+```csv
+solicitud,tipo_visitante
+```
+
+- `solicitud`: código existente en `solicitudes.csv`.
+- `tipo_visitante`: `general`, `estudiante` o `nino`.
+- La cantidad de filas de una solicitud debe coincidir con su cantidad de
+  turistas.
 
 ## Datos adicionales de FA01
 
@@ -130,4 +164,4 @@ Una solicitud `pendiente` no tiene unidad asignada. Para pasarla a `asignada`, l
 - Los códigos no se repiten dentro de cada archivo.
 - Las referencias a puntos y unidades deben corresponder a registros existentes.
 - Los valores deben respetar los dominios y las restricciones indicadas en este documento.
-- Como referencia inicial, cada CSV contiene cuatro registros ilustrativos ambientados en lugares turísticos de Lima. No constituyen un conjunto de datos oficial y sus distancias, tiempos y costos son valores de ejemplo que el grupo puede ajustar.
+- Los registros turísticos, distancias, tiempos, tarifas y costos son ejemplos académicos que el grupo puede ajustar; no constituyen datos oficiales.

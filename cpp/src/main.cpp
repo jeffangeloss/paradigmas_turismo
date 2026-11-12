@@ -1,6 +1,8 @@
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -42,6 +44,14 @@ struct Solicitud {
   string unidadAsignada;
 };
 
+struct AlternativaFA02 {
+  vector<string> ruta;
+  string tipoTransporte;
+  int cantidadVisitas;
+  double costoTotal;
+  int tiempoTotal;
+};
+
 class SistemaTurismo {
 public:
   explicit SistemaTurismo(const string &carpetaDatos)
@@ -58,6 +68,7 @@ public:
            << "5. Abrir modulo Haskell\n"
            << "6. Abrir modulo Prolog\n"
            << "7. Registrar datos para FA01\n"
+           << "8. Cotizar plan turistico FA02\n"
            << "0. Salir\n"
            << "Opcion: ";
       getline(cin, opcion);
@@ -76,6 +87,8 @@ public:
         abrirProlog();
       } else if (opcion == "7") {
         menuFA01();
+      } else if (opcion == "8") {
+        menuFA02();
       } else if (opcion == "0") {
         cout << "Programa finalizado.\n";
       } else {
@@ -335,6 +348,309 @@ private:
          << "Solicitudes: " << solicitudes.size() << " (pendientes: "
          << pendientes << ", asignadas: " << asignadas << ", entregadas: "
          << entregadas << ")\n";
+  }
+
+  bool leerDoublePositivo(const string &mensaje, double &numero) const {
+    string texto = leerTexto(mensaje);
+    stringstream lector(texto);
+    char sobrante;
+    if (!(lector >> numero) || numero <= 0 || lector >> sobrante) {
+      cout << "Ingresa un numero mayor que cero.\n";
+      return false;
+    }
+    return true;
+  }
+
+  bool leerEnteroPositivo(const string &mensaje, int &numero) const {
+    string texto = leerTexto(mensaje);
+    stringstream lector(texto);
+    char sobrante;
+    if (!(lector >> numero) || numero <= 0 || lector >> sobrante) {
+      cout << "Ingresa un numero entero mayor que cero.\n";
+      return false;
+    }
+    return true;
+  }
+
+  bool leerEnteroNoNegativo(const string &mensaje, int &numero) const {
+    string texto = leerTexto(mensaje);
+    stringstream lector(texto);
+    char sobrante;
+    if (!(lector >> numero) || numero < 0 || lector >> sobrante) {
+      cout << "Ingresa un numero entero mayor o igual que cero.\n";
+      return false;
+    }
+    return true;
+  }
+
+  vector<string> separarPor(const string &texto, char separador) const {
+    vector<string> partes;
+    string parte;
+    for (int i = 0; i <= static_cast<int>(texto.size()); ++i) {
+      if (i == static_cast<int>(texto.size()) || texto[i] == separador) {
+        partes.push_back(parte);
+        parte = "";
+      } else {
+        parte += texto[i];
+      }
+    }
+    return partes;
+  }
+
+  bool parsearAlternativa(const string &linea,
+                          AlternativaFA02 &alternativa) const {
+    vector<string> campos = separarPor(linea, '|');
+    if (campos.size() != 7 || campos[0] != "FA02_DATA") return false;
+
+    stringstream lectorCantidad(campos[4]);
+    stringstream lectorCosto(campos[5]);
+    stringstream lectorTiempo(campos[6]);
+    alternativa.ruta = separarPor(campos[2], '>');
+    alternativa.tipoTransporte = campos[3];
+    lectorCantidad >> alternativa.cantidadVisitas;
+    lectorCosto >> alternativa.costoTotal;
+    lectorTiempo >> alternativa.tiempoTotal;
+
+    return !alternativa.ruta.empty() && alternativa.tipoTransporte != ""
+           && !lectorCantidad.fail() && !lectorCosto.fail()
+           && !lectorTiempo.fail();
+  }
+
+  string comandoFA02(int generales, int estudiantes, int ninos,
+                     double presupuesto, int tiempoMaximo) const {
+    stringstream comando;
+    comando << fixed << setprecision(2);
+    if (carpetaDatos == "_datos") {
+      comando << "cabal run --project-dir=haskell turismo-haskell -- _datos";
+    } else {
+      comando << "cabal run --project-dir=../haskell turismo-haskell -- ../_datos";
+    }
+    comando << " --fa02 " << generales << " " << estudiantes << " " << ninos
+            << " " << presupuesto << " " << tiempoMaximo << " 2>&1";
+    return comando.str();
+  }
+
+  bool ejecutarHaskellFA02(int generales, int estudiantes, int ninos,
+                           double presupuesto, int tiempoMaximo,
+                           vector<AlternativaFA02> &alternativas) const {
+    string comando = comandoFA02(generales, estudiantes, ninos, presupuesto,
+                                 tiempoMaximo);
+    FILE *proceso = _popen(comando.c_str(), "r");
+    if (proceso == NULL) {
+      cout << "[ERROR] No se pudo iniciar Haskell.\n";
+      return false;
+    }
+
+    bool hayError = false;
+    char buffer[512];
+    while (fgets(buffer, sizeof(buffer), proceso) != NULL) {
+      string linea(buffer);
+      while (!linea.empty() && (linea.back() == '\n' || linea.back() == '\r')) {
+        linea.pop_back();
+      }
+
+      if (linea.find("FA02_DATA|") == 0) {
+        AlternativaFA02 alternativa;
+        if (parsearAlternativa(linea, alternativa)) {
+          alternativas.push_back(alternativa);
+        } else {
+          hayError = true;
+          cout << "[ERROR] Haskell devolvio una alternativa invalida.\n";
+        }
+      } else if (linea.find("FA02_ERROR|") == 0) {
+        hayError = true;
+        cout << "[ERROR] " << linea.substr(12) << "\n";
+      } else {
+        cout << linea << "\n";
+      }
+    }
+
+    int resultado = _pclose(proceso);
+    if (resultado != 0) {
+      cout << "[ERROR] Haskell no pudo completar FA02.\n";
+      return false;
+    }
+    return !hayError;
+  }
+
+  bool guardarPlanFA02(const vector<Unidad> &unidades,
+                       const vector<Solicitud> &solicitudes,
+                       const vector<string> &visitantes) const {
+    ofstream archivoUnidades(rutaArchivo("unidades.csv").c_str());
+    ofstream archivoSolicitudes(rutaArchivo("solicitudes.csv").c_str());
+    ofstream archivoVisitantes(rutaArchivo("visitantes.csv").c_str());
+    if (!archivoUnidades || !archivoSolicitudes || !archivoVisitantes) {
+      return false;
+    }
+
+    archivoUnidades << "codigo,tipo,capacidad,costo_km,estado\n";
+    archivoUnidades << fixed << setprecision(2);
+    for (int i = 0; i < static_cast<int>(unidades.size()); ++i) {
+      archivoUnidades << unidades[i].codigo << "," << unidades[i].tipo << ","
+                      << unidades[i].capacidad << "," << unidades[i].costoKm
+                      << "," << unidades[i].estado << "\n";
+    }
+
+    archivoSolicitudes
+        << "codigo,origen,destino,cantidad_turistas,prioridad,estado,unidad_asignada\n";
+    for (int i = 0; i < static_cast<int>(solicitudes.size()); ++i) {
+      archivoSolicitudes << solicitudes[i].codigo << ","
+                         << solicitudes[i].origen << ","
+                         << solicitudes[i].destino << ","
+                         << solicitudes[i].cantidadTuristas << ","
+                         << solicitudes[i].prioridad << ","
+                         << solicitudes[i].estado << ","
+                         << solicitudes[i].unidadAsignada << "\n";
+    }
+
+    archivoVisitantes << "solicitud,tipo_visitante\n";
+    for (int i = 0; i < static_cast<int>(visitantes.size()); ++i) {
+      archivoVisitantes << visitantes[i] << "\n";
+    }
+
+    return archivoUnidades.good() && archivoSolicitudes.good()
+           && archivoVisitantes.good();
+  }
+
+  string siguienteCodigoSolicitud(const vector<Solicitud> &solicitudes) const {
+    int mayor = 0;
+    for (int i = 0; i < static_cast<int>(solicitudes.size()); ++i) {
+      if (solicitudes[i].codigo.size() > 1
+          && solicitudes[i].codigo[0] == 'S') {
+        stringstream lector(solicitudes[i].codigo.substr(1));
+        int numero;
+        char sobrante;
+        if (lector >> numero && !(lector >> sobrante) && numero > mayor) {
+          mayor = numero;
+        }
+      }
+    }
+
+    stringstream codigo;
+    codigo << "S" << setw(3) << setfill('0') << mayor + 1;
+    return codigo.str();
+  }
+
+  int buscarUnidadDisponible(const vector<Unidad> &unidades,
+                             const string &tipoTransporte,
+                             int cantidadPersonas) const {
+    int posicion = -1;
+    for (int i = 0; i < static_cast<int>(unidades.size()); ++i) {
+      bool compatible = unidades[i].estado == "disponible"
+                        && unidades[i].tipo == tipoTransporte
+                        && unidades[i].capacidad >= cantidadPersonas;
+      if (compatible
+          && (posicion == -1 || unidades[i].costoKm < unidades[posicion].costoKm
+              || (unidades[i].costoKm == unidades[posicion].costoKm
+                  && unidades[i].codigo < unidades[posicion].codigo))) {
+        posicion = i;
+      }
+    }
+    return posicion;
+  }
+
+  void agregarVisitantes(vector<string> &visitantes,
+                         const string &codigoSolicitud,
+                         const string &tipoVisitante, int cantidad) const {
+    for (int i = 0; i < cantidad; ++i) {
+      visitantes.push_back(codigoSolicitud + "," + tipoVisitante);
+    }
+  }
+
+  void registrarPlanFA02(int generales, int estudiantes, int ninos,
+                         const AlternativaFA02 &alternativa) const {
+    if (alternativa.ruta.size() < 2 || alternativa.ruta[0] != "P000") {
+      cout << "[ERROR] Haskell devolvio una ruta invalida.\n";
+      return;
+    }
+
+    int cantidadPersonas = generales + estudiantes + ninos;
+    vector<Unidad> unidades = cargarUnidades();
+    vector<Solicitud> solicitudes = cargarSolicitudes();
+    vector<string> visitantes;
+    if (!leerFilas("visitantes.csv", visitantes)) {
+      cout << "[ERROR] No se pudo leer visitantes.csv.\n";
+      return;
+    }
+
+    int posicionUnidad = buscarUnidadDisponible(
+        unidades, alternativa.tipoTransporte, cantidadPersonas);
+    if (posicionUnidad == -1) {
+      cout << "[ERROR] La unidad recomendada ya no esta disponible.\n"
+           << "Vuelve a generar las alternativas.\n";
+      return;
+    }
+
+    string codigoSolicitud = siguienteCodigoSolicitud(solicitudes);
+    Solicitud solicitud;
+    solicitud.codigo = codigoSolicitud;
+    solicitud.origen = "P000";
+    solicitud.destino = alternativa.ruta.back();
+    solicitud.cantidadTuristas = cantidadPersonas;
+    solicitud.prioridad = "media";
+    solicitud.estado = "asignada";
+    solicitud.unidadAsignada = unidades[posicionUnidad].codigo;
+
+    unidades[posicionUnidad].estado = "ocupada";
+    solicitudes.push_back(solicitud);
+    agregarVisitantes(visitantes, codigoSolicitud, "general", generales);
+    agregarVisitantes(visitantes, codigoSolicitud, "estudiante", estudiantes);
+    agregarVisitantes(visitantes, codigoSolicitud, "nino", ninos);
+
+    if (!guardarPlanFA02(unidades, solicitudes, visitantes)) {
+      cout << "[ERROR] No se pudieron actualizar los archivos CSV.\n";
+      return;
+    }
+
+    cout << "[OK] Alternativa seleccionada.\n"
+         << "[OK] Unidad " << unidades[posicionUnidad].codigo << " asignada.\n"
+         << "[OK] Solicitud " << codigoSolicitud << " creada.\n";
+  }
+
+  void menuFA02() const {
+    int generales;
+    int estudiantes;
+    int ninos;
+    if (!leerEnteroNoNegativo("Visitantes generales: ", generales)) return;
+    if (!leerEnteroNoNegativo("Visitantes estudiantes: ", estudiantes)) return;
+    if (!leerEnteroNoNegativo("Visitantes ninos: ", ninos)) return;
+    if (generales + estudiantes + ninos == 0) {
+      cout << "El grupo debe tener al menos una persona.\n";
+      return;
+    }
+
+    double presupuesto;
+    int tiempoMaximo;
+    if (!leerDoublePositivo("Presupuesto maximo: ", presupuesto)) return;
+    if (!leerEnteroPositivo("Tiempo disponible en minutos: ", tiempoMaximo)) return;
+
+    vector<AlternativaFA02> alternativas;
+    if (!ejecutarHaskellFA02(generales, estudiantes, ninos, presupuesto,
+                             tiempoMaximo, alternativas)) {
+      return;
+    }
+    if (alternativas.empty()) return;
+
+    string textoOpcion = leerTexto(
+        "Seleccione una alternativa (1-3) o 0 para cancelar: ");
+    stringstream lectorOpcion(textoOpcion);
+    int opcion;
+    char sobrante;
+    if (!(lectorOpcion >> opcion) || lectorOpcion >> sobrante) {
+      cout << "Opcion invalida.\n";
+      return;
+    }
+    if (opcion == 0) {
+      cout << "Asignacion cancelada.\n";
+      return;
+    }
+    if (opcion < 1 || opcion > static_cast<int>(alternativas.size())) {
+      cout << "Opcion invalida.\n";
+      return;
+    }
+
+    registrarPlanFA02(generales, estudiantes, ninos,
+                      alternativas[opcion - 1]);
   }
 
   void menuFA01() {
