@@ -1,28 +1,18 @@
 -- 4.2.3 Función de vecinos.
 module Vecinos (vecinos, ejecutarVecinos) where
 
-import Tipos (Conexion (..))
+import Tipos (Conexion (..), EstadoConexion (Habilitada))
 
 vecinosDesdeOrigen :: String -> [Conexion] -> [String]
 vecinosDesdeOrigen punto conexiones =
-  [ destino
-  | Conexion _ origen destino _ _ estado <- conexiones
-  , origen == punto
-  , estado == "habilitada"
-  ]
+  [destino | Conexion _ origen destino _ _ Habilitada <- conexiones, origen == punto]
 
 vecinosDesdeDestino :: String -> [Conexion] -> [String]
 vecinosDesdeDestino punto conexiones =
-  [ origen
-  | Conexion _ origen destino _ _ estado <- conexiones
-  , destino == punto
-  , estado == "habilitada"
-  ]
+  [origen | Conexion _ origen destino _ _ Habilitada <- conexiones, destino == punto]
 
 vecinos :: String -> [Conexion] -> [String]
-vecinos punto conexiones =
-  vecinosDesdeOrigen punto conexiones
-    ++ vecinosDesdeDestino punto conexiones
+vecinos punto conexiones = vecinosDesdeOrigen punto conexiones ++ vecinosDesdeDestino punto conexiones
 
 ejecutarVecinos :: [Conexion] -> IO ()
 ejecutarVecinos conexiones = do

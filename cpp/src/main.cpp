@@ -1,3 +1,11 @@
+#include "ArchivosCSV.h"
+#include "Conexion.h"
+#include "FA02.h"
+#include "Punto.h"
+#include "Solicitud.h"
+#include "Tipos.h"
+#include "Unidad.h"
+
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
@@ -8,47 +16,13 @@
 
 using namespace std;
 
-struct Punto {
-  string codigo;
-  string nombre;
-  string tipo;
-  string zona;
-};
-
-struct Conexion {
-  string codigo;
-  string origen;
-  string destino;
-  double distancia;
-  int tiempo;
-  string estado;
-};
-
-struct Unidad {
-  string codigo;
-  string tipo;
-  int capacidad;
-  double costoKm;
-  string estado;
-};
-
-struct Solicitud {
-  string codigo;
-  string origen;
-  string destino;
-  int cantidadTuristas;
-  string prioridad;
-  string estado;
-  string unidadAsignada;
-};
-
 class SistemaTurismo {
 public:
   explicit SistemaTurismo(const string &carpetaDatos)
-      : carpetaDatos(carpetaDatos) {}
+      : carpetaDatos(carpetaDatos), archivosCSV(carpetaDatos) {}
 
   void ejecutar() {
-    cargarDatosIniciales();
+    archivosCSV.cargarDatosIniciales();
     string opcion;
     do {
       cout << "\n=== Sistema de turismo ===\n"
@@ -59,6 +33,7 @@ public:
            << "5. Abrir modulo Haskell\n"
            << "6. Abrir modulo Prolog\n"
            << "7. Registrar datos para FA01\n"
+           << "8. Cotizar plan turistico FA02\n"
            << "0. Salir\n"
            << "Opcion: ";
       getline(cin, opcion);
@@ -77,6 +52,9 @@ public:
         abrirProlog();
       } else if (opcion == "7") {
         menuFA01();
+      } else if (opcion == "8") {
+        ejecutarFA02(carpetaDatos);
+        archivosCSV.actualizarDatos();
       } else if (opcion == "0") {
         cout << "Programa finalizado.\n";
       } else {
@@ -87,31 +65,7 @@ public:
 
 private:
   string carpetaDatos;
-
-  vector<Punto> puntos;
-  vector<Conexion> conexiones;
-  vector<Unidad> unidades;
-  vector<Solicitud> solicitudes;
-
-  // 4.1.2 Carga inicial. Responsable: Jefferson Sanchez.
-  void cargarDatosIniciales() {
-    const vector<string> archivos = {"puntos.csv", "conexiones.csv",
-                                     "unidades.csv", "solicitudes.csv"};
-    for (int i = 0; i < static_cast<int>(archivos.size()); ++i) {
-      ifstream archivo(rutaArchivo(archivos[i]).c_str());
-      if (!archivo) cerr << "No se pudo abrir " << rutaArchivo(archivos[i]) << "\n";
-    }
-
-    puntos = cargarPuntos();
-    conexiones = cargarConexiones();
-    unidades = cargarUnidades();
-    solicitudes = cargarSolicitudes();
-
-    cout << "Puntos cargados: " << puntos.size() << '\n'
-         << "Conexiones cargadas: " << conexiones.size() << '\n'
-         << "Unidades cargadas: " << unidades.size() << '\n'
-         << "Solicitudes cargadas: " << solicitudes.size() << '\n';
-  }
+  ArchivosCSV archivosCSV;
 
   string rutaArchivo(const string &nombre) const {
     return carpetaDatos + "/" + nombre;
@@ -155,93 +109,6 @@ private:
     return true;
   }
 
-  vector<Punto> cargarPuntos() const {
-    vector<Punto> puntos;
-    vector<string> filas;
-    if (!leerFilas("puntos.csv", filas)) return puntos;
-
-    for (int i = 0; i < static_cast<int>(filas.size()); ++i) {
-      vector<string> campos = separarCampos(filas[i]);
-      if (campos.size() >= 4) {
-        Punto punto;
-        punto.codigo = campos[0];
-        punto.nombre = campos[1];
-        punto.tipo = campos[2];
-        punto.zona = campos[3];
-        puntos.push_back(punto);
-      }
-    }
-    return puntos;
-  }
-
-  vector<Conexion> cargarConexiones() const {
-    vector<Conexion> conexiones;
-    vector<string> filas;
-    if (!leerFilas("conexiones.csv", filas)) return conexiones;
-
-    for (int i = 0; i < static_cast<int>(filas.size()); ++i) {
-      vector<string> campos = separarCampos(filas[i]);
-      if (campos.size() >= 6) {
-        Conexion conexion;
-        conexion.codigo = campos[0];
-        conexion.origen = campos[1];
-        conexion.destino = campos[2];
-        stringstream lectorDistancia(campos[3]);
-        stringstream lectorTiempo(campos[4]);
-        lectorDistancia >> conexion.distancia;
-        lectorTiempo >> conexion.tiempo;
-        conexion.estado = campos[5];
-        conexiones.push_back(conexion);
-      }
-    }
-    return conexiones;
-  }
-
-  vector<Unidad> cargarUnidades() const {
-    vector<Unidad> unidades;
-    vector<string> filas;
-    if (!leerFilas("unidades.csv", filas)) return unidades;
-
-    for (int i = 0; i < static_cast<int>(filas.size()); ++i) {
-      vector<string> campos = separarCampos(filas[i]);
-      if (campos.size() >= 5) {
-        Unidad unidad;
-        unidad.codigo = campos[0];
-        unidad.tipo = campos[1];
-        stringstream lectorCapacidad(campos[2]);
-        stringstream lectorCosto(campos[3]);
-        lectorCapacidad >> unidad.capacidad;
-        lectorCosto >> unidad.costoKm;
-        unidad.estado = campos[4];
-        unidades.push_back(unidad);
-      }
-    }
-    return unidades;
-  }
-
-  vector<Solicitud> cargarSolicitudes() const {
-    vector<Solicitud> solicitudes;
-    vector<string> filas;
-    if (!leerFilas("solicitudes.csv", filas)) return solicitudes;
-
-    for (int i = 0; i < static_cast<int>(filas.size()); ++i) {
-      vector<string> campos = separarCampos(filas[i]);
-      if (campos.size() >= 7) {
-        Solicitud solicitud;
-        solicitud.codigo = campos[0];
-        solicitud.origen = campos[1];
-        solicitud.destino = campos[2];
-        stringstream lectorCantidad(campos[3]);
-        lectorCantidad >> solicitud.cantidadTuristas;
-        solicitud.prioridad = campos[4];
-        solicitud.estado = campos[5];
-        solicitud.unidadAsignada = campos[6];
-        solicitudes.push_back(solicitud);
-      }
-    }
-    return solicitudes;
-  }
-
   void menuConsultas() const {
     cout << "\n=== Consultas basicas ===\n"
          << "1. Punto\n2. Conexion\n3. Unidad\n4. Solicitud\n0. Volver\n";
@@ -254,12 +121,14 @@ private:
   }
 
   void consultarPunto() const {
+    vector<Punto> puntos = archivosCSV.getPuntos();
     string codigo = mayusculas(leerTexto("Codigo del punto: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(puntos.size()); ++i) {
-      if (puntos[i].codigo == codigo) {
-        cout << puntos[i].codigo << " | " << puntos[i].nombre << " | "
-             << puntos[i].tipo << " | " << puntos[i].zona << "\n";
+      if (puntos[i].getCodigo() == codigo) {
+        cout << puntos[i].getCodigo() << " | " << puntos[i].getNombre() << " | "
+             << archivosCSV.textoTipoPunto(puntos[i].getTipo()) << " | "
+             << puntos[i].getZona() << "\n";
         encontrado = true;
       }
     }
@@ -267,14 +136,18 @@ private:
   }
 
   void consultarConexion() const {
+    vector<Conexion> conexiones = archivosCSV.getConexiones();
     string codigo = mayusculas(leerTexto("Codigo de la conexion: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(conexiones.size()); ++i) {
-      if (conexiones[i].codigo == codigo) {
-        cout << conexiones[i].codigo << " | " << conexiones[i].origen << " -> "
-             << conexiones[i].destino << " | " << conexiones[i].distancia
-             << " km | " << conexiones[i].tiempo << " min | "
-             << conexiones[i].estado << "\n";
+      if (conexiones[i].getCodigo() == codigo) {
+        cout << conexiones[i].getCodigo() << " | "
+             << conexiones[i].getOrigen() << " -> "
+             << conexiones[i].getDestino() << " | "
+             << conexiones[i].getDistancia() << " km | "
+             << conexiones[i].getTiempo() << " min | "
+             << archivosCSV.textoEstadoConexion(conexiones[i].getEstado())
+             << "\n";
         encontrado = true;
       }
     }
@@ -282,13 +155,16 @@ private:
   }
 
   void consultarUnidad() const {
+    vector<Unidad> unidades = archivosCSV.getUnidades();
     string codigo = mayusculas(leerTexto("Codigo de la unidad: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(unidades.size()); ++i) {
-      if (unidades[i].codigo == codigo) {
-        cout << unidades[i].codigo << " | " << unidades[i].tipo << " | "
-             << unidades[i].capacidad << " turistas | costo/km: "
-             << unidades[i].costoKm << " | " << unidades[i].estado << "\n";
+      if (unidades[i].getCodigo() == codigo) {
+        cout << unidades[i].getCodigo() << " | "
+             << archivosCSV.textoTipoUnidad(unidades[i].getTipo()) << " | "
+             << unidades[i].getCapacidad() << " turistas | costo/km: "
+             << unidades[i].getCostoKm() << " | "
+             << archivosCSV.textoEstadoUnidad(unidades[i].getEstado()) << "\n";
         encontrado = true;
       }
     }
@@ -296,10 +172,11 @@ private:
   }
 
   void consultarSolicitud() const {
+    vector<Solicitud> solicitudes = archivosCSV.getSolicitudes();
     string codigo = mayusculas(leerTexto("Codigo de la solicitud: "));
     bool encontrado = false;
     for (int i = 0; i < static_cast<int>(solicitudes.size()); ++i) {
-      if (solicitudes[i].codigo == codigo) {
+      if (solicitudes[i].getCodigo() == codigo) {
         mostrarSolicitud(solicitudes[i]);
         encontrado = true;
       }
@@ -313,15 +190,24 @@ private:
   }
 
   void mostrarSolicitud(const Solicitud &solicitud) const {
-    cout << solicitud.codigo << " | " << solicitud.origen << " -> "
-         << solicitud.destino << " | " << solicitud.cantidadTuristas
-         << " turistas | prioridad " << solicitud.prioridad << " | estado "
-         << solicitud.estado << " | unidad "
-         << (solicitud.unidadAsignada == "" ? "sin asignar" : solicitud.unidadAsignada)
+    cout << solicitud.getCodigo() << " | " << solicitud.getOrigen() << " -> "
+         << solicitud.getDestino() << " | " << solicitud.getCantidadTuristas()
+         << " turistas | prioridad "
+         << archivosCSV.textoPrioridad(solicitud.getPrioridad())
+         << " | estado "
+         << archivosCSV.textoEstadoSolicitud(solicitud.getEstado())
+         << " | unidad "
+         << (solicitud.getUnidadAsignada() == ""
+                 ? "sin asignar"
+                 : solicitud.getUnidadAsignada())
          << "\n";
   }
 
   void mostrarReporteGeneral() const {
+    vector<Punto> puntos = archivosCSV.getPuntos();
+    vector<Conexion> conexiones = archivosCSV.getConexiones();
+    vector<Unidad> unidades = archivosCSV.getUnidades();
+    vector<Solicitud> solicitudes = archivosCSV.getSolicitudes();
     int habilitadas = 0;
     int cerradas = 0;
     int disponibles = 0;
@@ -331,17 +217,17 @@ private:
     int entregadas = 0;
 
     for (int i = 0; i < static_cast<int>(conexiones.size()); ++i) {
-      if (conexiones[i].estado == "habilitada") habilitadas++;
-      if (conexiones[i].estado == "cerrada") cerradas++;
+      if (conexiones[i].estaHabilitada()) habilitadas++;
+      else cerradas++;
     }
     for (int i = 0; i < static_cast<int>(unidades.size()); ++i) {
-      if (unidades[i].estado == "disponible") disponibles++;
-      if (unidades[i].estado == "ocupada") ocupadas++;
+      if (unidades[i].estaDisponible()) disponibles++;
+      else ocupadas++;
     }
     for (int i = 0; i < static_cast<int>(solicitudes.size()); ++i) {
-      if (solicitudes[i].estado == "pendiente") pendientes++;
-      if (solicitudes[i].estado == "asignada") asignadas++;
-      if (solicitudes[i].estado == "entregada") entregadas++;
+      if (solicitudes[i].getEstado() == EstadoSolicitud::Pendiente) pendientes++;
+      if (solicitudes[i].getEstado() == EstadoSolicitud::Asignada) asignadas++;
+      if (solicitudes[i].getEstado() == EstadoSolicitud::Entregada) entregadas++;
     }
 
     cout << "\n=== Reporte general ===\n"
@@ -583,7 +469,7 @@ private:
 
 int main() {
   string carpetaDatos = "_datos";
-  ifstream datos(carpetaDatos + "/puntos.csv");
+  ifstream datos((carpetaDatos + "/puntos.csv").c_str());
   if (!datos) carpetaDatos = "../_datos";
 
   SistemaTurismo sistema(carpetaDatos);

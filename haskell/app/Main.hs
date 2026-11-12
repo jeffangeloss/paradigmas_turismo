@@ -1,10 +1,13 @@
 module Main (main) where
 
+import CostoRuta (ejecutarCostoRuta)
 import LecturaCSV (leerConexiones, leerSolicitudes)
+import Rutas (ejecutarRutas)
 import Tipos (Conexion)
 import Tipos (Solicitud)
 import Vecinos (ejecutarVecinos, vecinos)
 import ReporteSolicitudes (ejecutarReporteSolicitudes, reporteSolicitudes)
+import SeleccionAtractivos (ejecutarSeleccionAtractivos)
 import System.Environment (getArgs)
 
 mostrarMenu :: IO ()
@@ -19,14 +22,10 @@ mostrarMenu = do
   putStrLn "0. Volver al menu de C++"
   putStrLn "Opcion:"
 
-mostrarPendiente :: String -> IO ()
-mostrarPendiente funcionalidad =
-  putStrLn ("[PENDIENTE] " ++ funcionalidad ++ " aun no esta implementada.")
-
 ejecutarOpcion :: String -> [Conexion] -> [Solicitud] -> IO ()
 ejecutarOpcion "1" conexiones _ = ejecutarVecinos conexiones
-ejecutarOpcion "2" _ _ = mostrarPendiente "Rutas posibles"
-ejecutarOpcion "3" _ _ = mostrarPendiente "Costo de una ruta"
+ejecutarOpcion "2" conexiones _ = ejecutarRutas conexiones
+ejecutarOpcion "3" conexiones _ = ejecutarCostoRuta conexiones
 ejecutarOpcion "4" _ solicitudes = ejecutarReporteSolicitudes solicitudes
 ejecutarOpcion "5" conexiones solicitudes = do
   putStrLn "=== Resultado esperado ==="
@@ -53,12 +52,17 @@ iniciarPrograma (Just conexiones) (Just solicitudes) = do
   putStrLn "[OK] solicitudes.csv cargado correctamente."
   menuPrincipal conexiones solicitudes
 
-main :: IO ()
-main = do
-  argumentos <- getArgs
-  let carpetaDatos = case argumentos of
-        [] -> "../_datos"
-        carpeta : _ -> carpeta
+iniciarMenu :: FilePath -> IO ()
+iniciarMenu carpetaDatos = do
   resultadoConexiones <- leerConexiones (carpetaDatos ++ "/conexiones.csv")
   resultadoSolicitudes <- leerSolicitudes (carpetaDatos ++ "/solicitudes.csv")
   iniciarPrograma resultadoConexiones resultadoSolicitudes
+
+main :: IO ()
+main = do
+  argumentos <- getArgs
+  case argumentos of
+    carpeta : "--fa02" : generales : estudiantes : ninos : presupuesto : tiempo : _ ->
+      ejecutarSeleccionAtractivos carpeta generales estudiantes ninos presupuesto tiempo
+    carpeta : _ -> iniciarMenu carpeta
+    [] -> iniciarMenu "../_datos"
