@@ -2,39 +2,22 @@
 module SeleccionAtractivos (ejecutarSeleccionAtractivos) where
 
 import CostoRuta (costoRuta)
-import LecturaCSV (leerConexiones, leerUnidades)
+import LecturaCSV (leerConexiones, leerEntradas, leerPuntos, leerUnidades)
 import System.IO.Error (catchIOError)
 import Text.Printf (printf)
 import Text.Read (readMaybe)
-import Tipos (Conexion, Unidad (..))
+import Tipos
+  ( Conexion
+  , Entrada (..)
+  , EstadoUnidad (Disponible)
+  , Punto (..)
+  , TipoPunto (Atractivo)
+  , TipoUnidad (..)
+  , Unidad (..)
+  )
 import Vecinos (vecinos)
 
-data PuntoFA02 = PuntoFA02 String String
-
-data EntradaFA02 = EntradaFA02 String Double Double Double Int
-
-data AlternativaFA02 = AlternativaFA02 [String] String Int Double Int
-
-separarCampos :: String -> [String]
-separarCampos fila =
-  case break (== ',') fila of
-    (campo, []) -> [campo]
-    (campo, _ : resto) -> campo : separarCampos resto
-
-leerFilas :: FilePath -> IO [String]
-leerFilas ruta = do
-  contenido <- readFile ruta
-  return (drop 1 (lines contenido))
-
-leerCSV :: (String -> Maybe a) -> FilePath -> IO (Maybe [a])
-leerCSV parsear ruta = catchIOError (leerArchivo parsear ruta) manejarError
-
-leerArchivo :: (String -> Maybe a) -> FilePath -> IO (Maybe [a])
-leerArchivo parsear ruta = do
-  filas <- leerFilas ruta
-  case traverse parsear filas of
-    Nothing -> return Nothing
-    Just datos -> length datos `seq` return (Just datos)
+data AlternativaFA02 = AlternativaFA02 [String] TipoUnidad Int Double Int
 
 manejarError :: IOError -> IO (Maybe [a])
 manejarError _ = return Nothing
@@ -49,34 +32,15 @@ comprobarResultado accion = do
     Nothing -> return Nothing
     Just datos -> length datos `seq` return (Just datos)
 
-parsearPunto :: String -> Maybe PuntoFA02
-parsearPunto fila =
-  case separarCampos fila of
-    [codigo, _, tipo, _] -> Just (PuntoFA02 codigo tipo)
-    _ -> Nothing
-
-parsearEntrada :: String -> Maybe EntradaFA02
-parsearEntrada fila =
-  case separarCampos fila of
-    [codigo, precioGeneral, precioEstudiante, precioNino, minutos] -> do
-      general <- readMaybe precioGeneral
-      estudiante <- readMaybe precioEstudiante
-      nino <- readMaybe precioNino
-      duracion <- readMaybe minutos
-      if general >= 0 && estudiante >= 0 && nino >= 0 && duracion > 0
-        then Just (EntradaFA02 codigo general estudiante nino duracion)
-        else Nothing
-    _ -> Nothing
-
-buscarPunto :: String -> [PuntoFA02] -> Maybe PuntoFA02
+buscarPunto :: String -> [Punto] -> Maybe Punto
 buscarPunto _ [] = Nothing
-buscarPunto codigo (punto@(PuntoFA02 codigoActual _) : restantes)
+buscarPunto codigo (punto@(Punto codigoActual _ _ _) : restantes)
   | codigo == codigoActual = Just punto
   | otherwise = buscarPunto codigo restantes
 
-buscarEntrada :: String -> [EntradaFA02] -> Maybe EntradaFA02
+buscarEntrada :: String -> [Entrada] -> Maybe Entrada
 buscarEntrada _ [] = Nothing
-buscarEntrada codigo (entrada@(EntradaFA02 codigoActual _ _ _ _) : restantes)
+buscarEntrada codigo (entrada@(Entrada codigoActual _ _ _ _) : restantes)
   | codigo == codigoActual = Just entrada
   | otherwise = buscarEntrada codigo restantes
 
@@ -107,28 +71,28 @@ visitasDeRuta :: [String] -> [String]
 visitasDeRuta [] = []
 visitasDeRuta (_ : visitas) = visitas
 
-costoPorPerfiles :: Int -> Int -> Int -> EntradaFA02 -> Double
-costoPorPerfiles generales estudiantes ninos (EntradaFA02 _ precioGeneral precioEstudiante precioNino _) =
+costoPorPerfiles :: Int -> Int -> Int -> Entrada -> Double
+costoPorPerfiles generales estudiantes ninos (Entrada _ precioGeneral precioEstudiante precioNino _) =
   fromIntegral generales * precioGeneral
     + fromIntegral estudiantes * precioEstudiante
     + fromIntegral ninos * precioNino
 
-calcularVisitas :: [String] -> [PuntoFA02] -> [EntradaFA02] -> Int -> Int -> Int -> Maybe (Double, Int)
+calcularVisitas :: [String] -> [Punto] -> [Entrada] -> Int -> Int -> Int -> Maybe (Double, Int)
 calcularVisitas [] _ _ _ _ _ = Just (0, 0)
 calcularVisitas (codigo : restantes) puntos entradas generales estudiantes ninos =
   case (buscarPunto codigo puntos, buscarEntrada codigo entradas) of
-    (Just (PuntoFA02 _ tipo), Just entrada@(EntradaFA02 _ _ _ _ minutos)) ->
+    (Just (Punto _ _ tipo _), Just entrada@(Entrada _ _ _ _ minutos)) ->
       case calcularVisitas restantes puntos entradas generales estudiantes ninos of
         Nothing -> Nothing
         Just (costoRestante, tiempoRestante) ->
-          if tipo == "atractivo"
+          if tipo == Atractivo
             then Just (costoPorPerfiles generales estudiantes ninos entrada + costoRestante, minutos + tiempoRestante)
             else Just (costoRestante, minutos + tiempoRestante)
     _ -> Nothing
 
 unidadCompatible :: Int -> Unidad -> Bool
-unidadCompatible cantidad (Unidad _ _ capacidad _ estado) =
-  estado == "disponible" && capacidad >= cantidad
+unidadCompatible cantidad (Unidad _ _ capacidad _ Disponible) = capacidad >= cantidad
+unidadCompatible _ _ = False
 
 esMejorUnidad :: Unidad -> Unidad -> Bool
 esMejorUnidad (Unidad codigoA tipoA _ costoA _) (Unidad codigoB tipoB _ costoB _) =
@@ -156,7 +120,7 @@ unidadesRecomendadas :: Int -> [Unidad] -> [Unidad]
 unidadesRecomendadas cantidad unidades =
   seleccionarUnidadesBaratas (unidadesCompatibles cantidad unidades)
 
-crearAlternativa :: [String] -> Unidad -> [Conexion] -> [PuntoFA02] -> [EntradaFA02] -> Int -> Int -> Int -> Double -> Int -> Maybe AlternativaFA02
+crearAlternativa :: [String] -> Unidad -> [Conexion] -> [Punto] -> [Entrada] -> Int -> Int -> Int -> Double -> Int -> Maybe AlternativaFA02
 crearAlternativa ruta (Unidad _ tipo _ costoKm _) conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo =
   case costoRuta ruta conexiones of
     (_, _, False) -> Nothing
@@ -166,7 +130,7 @@ crearAlternativa ruta (Unidad _ tipo _ costoKm _) conexiones puntos entradas gen
         Just (costoEntradas, tiempoVisitas) ->
           validarAlternativa ruta tipo costoEntradas distancia costoKm tiempoRuta tiempoVisitas presupuesto tiempoMaximo
 
-validarAlternativa :: [String] -> String -> Double -> Double -> Double -> Int -> Int -> Double -> Int -> Maybe AlternativaFA02
+validarAlternativa :: [String] -> TipoUnidad -> Double -> Double -> Double -> Int -> Int -> Double -> Int -> Maybe AlternativaFA02
 validarAlternativa ruta tipo costoEntradas distancia costoKm tiempoRuta tiempoVisitas presupuesto tiempoMaximo =
   crearAlternativaValida
     ruta
@@ -176,20 +140,20 @@ validarAlternativa ruta tipo costoEntradas distancia costoKm tiempoRuta tiempoVi
     presupuesto
     tiempoMaximo
 
-crearAlternativaValida :: [String] -> String -> Double -> Int -> Double -> Int -> Maybe AlternativaFA02
+crearAlternativaValida :: [String] -> TipoUnidad -> Double -> Int -> Double -> Int -> Maybe AlternativaFA02
 crearAlternativaValida ruta tipo costoTotal tiempoTotal presupuesto tiempoMaximo
   | costoTotal <= presupuesto && tiempoTotal <= tiempoMaximo =
       Just (AlternativaFA02 ruta tipo (length (visitasDeRuta ruta)) costoTotal tiempoTotal)
   | otherwise = Nothing
 
-alternativasPorUnidades :: [Unidad] -> [String] -> [Conexion] -> [PuntoFA02] -> [EntradaFA02] -> Int -> Int -> Int -> Double -> Int -> [AlternativaFA02]
+alternativasPorUnidades :: [Unidad] -> [String] -> [Conexion] -> [Punto] -> [Entrada] -> Int -> Int -> Int -> Double -> Int -> [AlternativaFA02]
 alternativasPorUnidades [] _ _ _ _ _ _ _ _ _ = []
 alternativasPorUnidades (unidad : restantes) ruta conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo =
   case crearAlternativa ruta unidad conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo of
     Nothing -> alternativasPorUnidades restantes ruta conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo
     Just alternativa -> alternativa : alternativasPorUnidades restantes ruta conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo
 
-alternativasPorRutas :: [[String]] -> [Unidad] -> [Conexion] -> [PuntoFA02] -> [EntradaFA02] -> Int -> Int -> Int -> Double -> Int -> [AlternativaFA02]
+alternativasPorRutas :: [[String]] -> [Unidad] -> [Conexion] -> [Punto] -> [Entrada] -> Int -> Int -> Int -> Double -> Int -> [AlternativaFA02]
 alternativasPorRutas [] _ _ _ _ _ _ _ _ _ = []
 alternativasPorRutas (ruta : restantes) unidades conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo =
   alternativasPorUnidades unidades ruta conexiones puntos entradas generales estudiantes ninos presupuesto tiempoMaximo
@@ -229,17 +193,22 @@ mostrarAlternativasDesde _ [] = return ()
 mostrarAlternativasDesde numero (AlternativaFA02 ruta tipo visitas costo tiempo : restantes) = do
   putStrLn (show numero ++ ". " ++ unirRuta " -> " ruta)
   putStrLn ("   Visitas: " ++ show visitas)
-  putStrLn ("   Transporte recomendado: " ++ tipo)
+  putStrLn ("   Transporte recomendado: " ++ textoTipoUnidad tipo)
   printf "   Costo total: S/ %.2f\n" costo
   putStrLn ("   Tiempo total: " ++ show tiempo ++ " min")
-  putStrLn ("FA02_DATA|" ++ show numero ++ "|" ++ unirRuta ">" ruta ++ "|" ++ tipo ++ "|" ++ show visitas ++ "|" ++ printf "%.2f" costo ++ "|" ++ show tiempo)
+  putStrLn ("FA02_DATA|" ++ show numero ++ "|" ++ unirRuta ">" ruta ++ "|" ++ textoTipoUnidad tipo ++ "|" ++ show visitas ++ "|" ++ printf "%.2f" costo ++ "|" ++ show tiempo)
   putStrLn ""
   mostrarAlternativasDesde (numero + 1) restantes
+
+textoTipoUnidad :: TipoUnidad -> String
+textoTipoUnidad GuiaPeatonal = "guia_peatonal"
+textoTipoUnidad TaxiTuristico = "taxi_turistico"
+textoTipoUnidad BusTuristico = "bus_turistico"
 
 mostrarError :: String -> IO ()
 mostrarError mensaje = putStrLn ("FA02_ERROR|" ++ mensaje)
 
-crearAlternativas :: Int -> Int -> Int -> Double -> Int -> [PuntoFA02] -> [Conexion] -> [Unidad] -> [EntradaFA02] -> [AlternativaFA02]
+crearAlternativas :: Int -> Int -> Int -> Double -> Int -> [Punto] -> [Conexion] -> [Unidad] -> [Entrada] -> [AlternativaFA02]
 crearAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas =
   alternativasPorRutas
     (rutasDesdeAgencia conexiones)
@@ -253,14 +222,14 @@ crearAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos co
     presupuesto
     tiempoMaximo
 
-mejoresAlternativas :: Int -> Int -> Int -> Double -> Int -> [PuntoFA02] -> [Conexion] -> [Unidad] -> [EntradaFA02] -> [AlternativaFA02]
+mejoresAlternativas :: Int -> Int -> Int -> Double -> Int -> [Punto] -> [Conexion] -> [Unidad] -> [Entrada] -> [AlternativaFA02]
 mejoresAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas =
   take 3
     ( ordenarAlternativas
         (crearAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas)
     )
 
-generarAlternativas :: Int -> Int -> Int -> Double -> Int -> [PuntoFA02] -> [Conexion] -> [Unidad] -> [EntradaFA02] -> IO ()
+generarAlternativas :: Int -> Int -> Int -> Double -> Int -> [Punto] -> [Conexion] -> [Unidad] -> [Entrada] -> IO ()
 generarAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas =
   case buscarPunto "P000" puntos of
     Nothing -> mostrarError "No existe la agencia P000 en puntos.csv."
@@ -268,7 +237,7 @@ generarAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos 
       mostrarAlternativas
         (mejoresAlternativas generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas)
 
-procesarDatos :: Int -> Int -> Int -> Double -> Int -> Maybe [PuntoFA02] -> Maybe [Conexion] -> Maybe [Unidad] -> Maybe [EntradaFA02] -> IO ()
+procesarDatos :: Int -> Int -> Int -> Double -> Int -> Maybe [Punto] -> Maybe [Conexion] -> Maybe [Unidad] -> Maybe [Entrada] -> IO ()
 procesarDatos _ _ _ _ _ Nothing _ _ _ = mostrarError "No se pudo leer puntos.csv."
 procesarDatos _ _ _ _ _ _ Nothing _ _ = mostrarError "No se pudo leer conexiones.csv."
 procesarDatos _ _ _ _ _ _ _ Nothing _ = mostrarError "No se pudo leer unidades.csv."
@@ -290,9 +259,9 @@ ejecutarSeleccionAtractivos carpetaDatos generalesTexto estudiantesTexto ninosTe
           && generales + estudiantes + ninos > 0
           && presupuesto > 0
           && tiempoMaximo > 0 -> do
-          puntos <- leerCSV parsearPunto (carpetaDatos ++ "/puntos.csv")
+          puntos <- leerSeguro (leerPuntos (carpetaDatos ++ "/puntos.csv"))
           conexiones <- leerSeguro (leerConexiones (carpetaDatos ++ "/conexiones.csv"))
           unidades <- leerSeguro (leerUnidades (carpetaDatos ++ "/unidades.csv"))
-          entradas <- leerCSV parsearEntrada (carpetaDatos ++ "/entradas.csv")
+          entradas <- leerSeguro (leerEntradas (carpetaDatos ++ "/entradas.csv"))
           procesarDatos generales estudiantes ninos presupuesto tiempoMaximo puntos conexiones unidades entradas
     _ -> mostrarError "Revisa las cantidades, el presupuesto y el tiempo ingresados."

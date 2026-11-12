@@ -7,7 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(turismo_lib
-    src/Destino.cpp
+    src/ArchivosCSV.cpp
+    src/Punto.cpp
+    src/Conexion.cpp
+    src/Unidad.cpp
+    src/Solicitud.cpp
+    src/Visitante.cpp
+    src/FA02.cpp
 )
 
 target_include_directories(turismo_lib PUBLIC include)

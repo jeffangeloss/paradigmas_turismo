@@ -1,13 +1,13 @@
 -- 4.2.6 Reporte de solicitudes.
 module ReporteSolicitudes(reporteSolicitudes, ejecutarReporteSolicitudes) where
 
-import Tipos (Solicitud (..))
+import Tipos (EstadoSolicitud (..), Prioridad (..), Solicitud (..))
 
 reporteSolicitudes :: [Solicitud] -> String
 reporteSolicitudes solicitudes =
-  let pendientes = contarEstado "pendiente" solicitudes
-      asignadas = contarEstado "asignada" solicitudes
-      entregadas = contarEstado "entregada" solicitudes
+  let pendientes = contarEstado Pendiente solicitudes
+      asignadas = contarEstado Asignada solicitudes
+      entregadas = contarEstado Entregada solicitudes
       totalTuristas = sumarTuristas solicitudes
       encabezado =
         [ "=== Reporte de solicitudes ==="
@@ -19,10 +19,11 @@ reporteSolicitudes solicitudes =
         ]
    in unirLineas (encabezado ++ lineasSolicitudes solicitudes)
 
-contarEstado :: String -> [Solicitud] -> Int
+esEstado :: EstadoSolicitud -> Solicitud -> Bool
+esEstado esperado (Solicitud _ _ _ _ _ actual _) = esperado == actual
+
+contarEstado :: EstadoSolicitud -> [Solicitud] -> Int
 contarEstado estado solicitudes = length (filter (esEstado estado) solicitudes)
-  where
-    esEstado esperado (Solicitud _ _ _ _ _ actual _) = esperado == actual
 
 sumarTuristas :: [Solicitud] -> Int
 sumarTuristas [] = 0
@@ -43,9 +44,19 @@ mostrarSolicitud :: Solicitud -> String
 mostrarSolicitud (Solicitud codigo origen destino cantidad prioridad estado unidad) =
   " - " ++ codigo ++ ": " ++ origen ++ " -> " ++ destino
     ++ " | turistas: " ++ show cantidad
-    ++ " | prioridad: " ++ prioridad
-    ++ " | estado: " ++ estado
+    ++ " | prioridad: " ++ textoPrioridad prioridad
+    ++ " | estado: " ++ textoEstado estado
     ++ " | unidad: " ++ mostrarUnidad unidad
+
+textoPrioridad :: Prioridad -> String
+textoPrioridad Baja = "baja"
+textoPrioridad Media = "media"
+textoPrioridad Alta = "alta"
+
+textoEstado :: EstadoSolicitud -> String
+textoEstado Pendiente = "pendiente"
+textoEstado Asignada = "asignada"
+textoEstado Entregada = "entregada"
 
 mostrarUnidad :: Maybe String -> String
 mostrarUnidad Nothing = "sin asignar"

@@ -1,5 +1,5 @@
 # ninja log v7
-31	1225	8159386942501924	CMakeFiles/turismo_lib.dir/src/Destino.cpp.obj	51e698e78e5cb2bd
-1227	1408	8159386954458695	libturismo_lib.a	e27f4e61699655a8
-40	1757	8159386942583264	CMakeFiles/turismo_cpp.dir/src/main.cpp.obj	d85a289fe08c176b
-1758	1982	8159386959766956	turismo_cpp.exe	8dedcc50f553e038
+85	1559	8160321847377717	CMakeFiles/turismo_lib.dir/src/Destino.cpp.obj	51e698e78e5cb2bd
+1560	1904	8160321862130492	libturismo_lib.a	e27f4e61699655a8
+57	919	8161427325359765	CMakeFiles/turismo_cpp.dir/src/main.cpp.obj	d85a289fe08c176b
+920	1225	8161427333987118	turismo_cpp.exe	8dedcc50f553e038

@@ -2,7 +2,7 @@
 module CostoRuta (costoRuta, ejecutarCostoRuta) where
 
 import Rutas (rutasPosibles)
-import Tipos (Conexion (..))
+import Tipos (Conexion (..), EstadoConexion (Habilitada))
 
 esMismoTramo :: String -> String -> String -> String -> Bool
 esMismoTramo puntoA puntoB origen destino =
@@ -11,10 +11,11 @@ esMismoTramo puntoA puntoB origen destino =
 
 buscarTramo :: String -> String -> [Conexion] -> (Double, Int, Bool)
 buscarTramo _ _ [] = (0, 0, False)
-buscarTramo puntoA puntoB (Conexion _ origen destino distancia tiempo estado : restantes)
-  | esMismoTramo puntoA puntoB origen destino && estado == "habilitada" =
+buscarTramo puntoA puntoB (Conexion _ origen destino distancia tiempo Habilitada : restantes)
+  | esMismoTramo puntoA puntoB origen destino =
       (distancia, tiempo, True)
   | otherwise = buscarTramo puntoA puntoB restantes
+buscarTramo puntoA puntoB (_ : restantes) = buscarTramo puntoA puntoB restantes
 
 sumarCostos :: (Double, Int, Bool) -> (Double, Int, Bool) -> (Double, Int, Bool)
 sumarCostos (distancia, tiempo, tramoValido) (distanciaRestante, tiempoRestante, rutaValida) =
